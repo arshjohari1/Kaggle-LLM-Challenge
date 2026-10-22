@@ -18,7 +18,9 @@ from sklearn.metrics import balanced_accuracy_score, confusion_matrix, recall_sc
 from threadpoolctl import threadpool_limits
 
 from ntl.data import LABELS, audit, fingerprint, make_folds, read_data, validate_folds, write_json
-from ntl.models import CANDIDATES, build_model
+from ntl.models import BASELINES, CANDIDATES, build_model
+from ntl.ensemble import fit_grouped
+from ntl.data import groups
 
 
 def metadata():
@@ -83,9 +85,10 @@ def evaluate(args):
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always", ConvergenceWarning)
                 with threadpool_limits(limits=args.threads):
-                    model.fit(df.text.iloc[tr], df.model.iloc[tr])
+                    fit_grouped(model, df.text.iloc[tr], df.model.iloc[tr], groups(df)[tr])
                     oof[va] = model.predict(df.text.iloc[va])
-                    raw = model.decision_function(df.text.iloc[va])
+                    raw = (model.decision_function(df.text.iloc[va]) if hasattr(model, "decision_function")
+                           else model.predict_proba(df.text.iloc[va]))
             order = [list(model.classes_).index(label) for label in LABELS]
             scores[va] = raw[:, order]
             result = {"fold": int(f), "train_rows": len(tr), "valid_rows": len(va),
@@ -99,7 +102,7 @@ def evaluate(args):
         prediction["prediction"] = oof
         prediction["word_count"] = df.text.str.split().str.len()
         prediction.to_csv(out / "oof.csv", index=False)
-        # Decision scores are margins/logits, not calibrated probabilities.
+        # These are margins/logits or native probabilities, depending on estimator.
         np.savez_compressed(out / "oof_scores.npz", scores=scores, labels=np.array(LABELS), ids=df.id.to_numpy(dtype=str))
         recall = recall_score(df.model, oof, labels=LABELS, average=None, zero_division=0)
         pd.DataFrame({"model": LABELS, "recall": recall}).to_csv(out / "per_class_recall.csv", index=False)
@@ -135,7 +138,7 @@ def train(args):
     model = build_model(args.candidate, args.seed)
     t = time.perf_counter()
     with threadpool_limits(limits=args.threads):
-        model.fit(df.text, df.model)
+        fit_grouped(model, df.text, df.model, groups(df))
     joblib.dump({"pipeline": model, "labels": LABELS}, out / "model.joblib", compress=3)
     write_json(out / "manifest.json", {**metadata(), "candidate": args.candidate, "seed": args.seed,
         "data_sha256": fingerprint(args.train), "rows": len(df), "seconds": time.perf_counter() - t,
@@ -237,7 +240,7 @@ def main():
     p.add_argument("--train", required=True)
     p.add_argument("--folds", required=True)
     p.add_argument("--out", required=True)
-    p.add_argument("--candidates", nargs="+", choices=CANDIDATES, default=list(CANDIDATES))
+    p.add_argument("--candidates", nargs="+", choices=CANDIDATES, default=list(BASELINES))
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--threads", type=int, default=2)
     p.set_defaults(func=evaluate)

@@ -15,8 +15,9 @@
   and fit all learned preprocessing inside training folds. Use the same fixed
   folds and balanced accuracy for comparisons. Never call synthetic results
   competition performance. Do not report unexecuted or public claims as measured.
-- Rules, paths, labels, deadlines, external-data policy, minor eligibility, and
-  Kaggle free quotas need official confirmation. See `docs/competition.md`.
+- The user has checked participation requirements; do not ask again. Rules for
+  external data, runtime, and free Kaggle quotas still need confirmation before
+  using external resources or scheduling remote training. See `docs/competition.md`.
 - Do not request secrets in chat, print environment values, or commit credentials.
   Do not commit competition data or model artifacts.
 - Keep seeds, data/fold hashes, versions, scores, class recall, timing, and

@@ -10,7 +10,8 @@ import pytest
 from threadpoolctl import threadpool_limits
 
 from ntl.cli import predict_frame, validate_submission
-from ntl.data import LABELS
+from ntl.data import LABELS, groups
+from ntl.ensemble import fit_grouped
 from ntl.models import CANDIDATES, build_model
 
 
@@ -21,11 +22,13 @@ def test_model_roundtrip_and_fold_local_vocabulary(candidate, passages, tmp_path
     heldout["text"] = heldout.text + " zzzuniqueheldoutcanaryzzz "
     model = build_model(candidate)
     with threadpool_limits(limits=1):
-        model.fit(train.text, train.model)
+        fit_grouped(model, train.text, train.model, groups(train))
         predictions = model.predict(heldout.text)
     assert set(predictions) <= set(LABELS)
-    features = model.named_steps["features"]
-    vectorizers = [v for _, v in features.transformer_list if hasattr(v, "vocabulary_")] if hasattr(features, "transformer_list") else [features]
+    features = model.named_steps["features"] if hasattr(model, "named_steps") else None
+    vectorizers = ([v for _, v in features.transformer_list if hasattr(v, "vocabulary_")]
+                   if hasattr(features, "transformer_list") else
+                   ([features] if hasattr(features, "vocabulary_") else []))
     for vectorizer in vectorizers:
         assert not any("uniqueheldoutcanary" in term for term in vectorizer.vocabulary_)
         assert "zzz" not in vectorizer.vocabulary_
@@ -33,6 +36,19 @@ def test_model_roundtrip_and_fold_local_vocabulary(candidate, passages, tmp_path
         style = dict(features.transformer_list)["style"]
         expected_mean = style.named_steps["extract"].transform(train.text).mean(axis=0)
         np.testing.assert_allclose(style.named_steps["scale"].mean_, expected_mean)
+    if candidate == "style_rbf":
+        expected_mean = features.named_steps["extract"].transform(train.text).mean(axis=0)
+        np.testing.assert_allclose(features.named_steps["scale"].mean_, expected_mean)
+    if candidate == "stacked":
+        assert (model.inner_fold_ >= 0).all()
+        for p in train.prompt_id.unique():
+            assert len(set(model.inner_fold_[train.prompt_id.to_numpy() == p])) == 1
+        for base in model.models_:
+            parts = base.named_steps["features"]
+            if hasattr(parts, "transformer_list"):
+                for _, part in parts.transformer_list:
+                    if hasattr(part, "vocabulary_"):
+                        assert "zzz" not in part.vocabulary_
     file = tmp_path / "model.joblib"
     joblib.dump({"pipeline": model, "labels": LABELS}, file)
     loaded = joblib.load(file)
