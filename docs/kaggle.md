@@ -9,27 +9,65 @@ has been created automatically.
    data, fitted models, caches and Python environments in future tasks. Git
    contains code and aggregate reports; trained artifacts are intentionally
    excluded.
-2. Download `artifacts/cpu-kaggle-bundle-v1.zip` from this workspace. It contains
+2. Download `artifacts/cpu-kaggle-bundle-v1.zip` (about 151 MiB) and
+   `notebooks/kaggle_inference.ipynb` from this workspace. The ZIP contains
    `model.joblib`, `training_manifest.json`, `ntl_bundle.json` and `wheels/`.
-   Create a **private** Kaggle dataset from its extracted contents, preserving
-   that directory structure. No training CSV is required by inference.
-3. Create a notebook for the Name That LLM competition and import
-   `notebooks/kaggle_inference.ipynb` from this repository. Attach the competition
-   input and the private bundle dataset. Attach exactly one bundle manifest.
-4. Use CPU and turn Internet off. Run all cells. The notebook verifies every
-   attached file checksum and Python minor compatibility, installs only the
-   local wheels into an isolated target, then runs inference in a fresh process.
+   Keep its name unchanged. No training CSV is required by inference.
+3. Sign in to Kaggle and open https://www.kaggle.com/datasets/new. Upload the
+   ZIP, name the dataset **Name That LLM CPU Model v1**, select **Private**, and
+   create it. If Kaggle extracts the archive, keep the `wheels/` folder and model
+   files together. The notebook handles either extracted files or the intact ZIP.
+4. Open https://www.kaggle.com/competitions/name-that-llm/code and choose
+   **New Notebook**. In the editor choose **File > Import Notebook**, upload the
+   supplied `.ipynb`, and name it **Name That LLM CPU Baseline v1**.
+   Use the input sidebar's **Add Input** (sometimes called **Add Data**) to attach
+   your private model dataset. Confirm the competition input is also attached;
+   if absent, find Name That LLM under the competition inputs and add it.
+   Attach exactly one copy of the model bundle.
+5. Under notebook/session settings choose **Accelerator: None** and **Internet:
+   Off**. Run all cells. The notebook verifies every attached file checksum and
+   Python minor compatibility, installs only local wheels into a temporary
+   target outside the working outputs, then runs inference in a fresh process.
    The tested wheels are Python 3.12/Linux x86-64. If the runtime differs,
    rebuild the wheels using that runtime before proceeding.
-5. Check `/kaggle/working/submission.parquet`: in the visible test it should
+6. Check `/kaggle/working/submission.parquet`: in the visible test it should
    contain three rows, the original string IDs and valid model names. The code
    automatically handles the larger hidden test during Kaggle's rerun; it does
    not use a fixed three-row prediction file. Local 4,000-row prediction used
    about 13 seconds and 394 MiB; actual platform timing may differ.
-6. When you choose to submit, save/run a notebook version and use Kaggle's
-   competition submission flow. Kaggle will rerun it with hidden data offline.
-   Keep your local validation reports and record the notebook/version and
-   leaderboard result separately. Daily limit is five and final selections two.
+   The final cells should print **SUCCESS: validated submission saved to
+   /kaggle/working/submission.parquet**, then **Submission rows: 3** and the
+   predictions. Re-running all cells is supported; a previous submission file
+   is replaced only after the new one validates.
+7. Click **Save Version**, select **Save & Run All** rather than a quick save,
+   and save the version. Wait for it to finish successfully. Open the completed
+   version's viewer/output and check that `submission.parquet` is present.
+8. Choose **Submit to Competition** for that completed notebook version and
+   confirm Name That LLM. If starting from the competition's **Submit Predictions**
+   screen, choose your saved notebook/version there. Submit the notebook version
+   so Kaggle reruns the code on hidden data; the visible three-row file is only
+   a format check. Wait for the submission status to complete, then check the
+   public score under the competition's **My Submissions** tab.
+
+Kaggle's interface labels can vary slightly. Its public score need not equal the
+37.56% local CV score. The private leaderboard score is determined separately.
+Record notebook/version and score together. Daily limit is five submissions and
+final selections two. This process needs no GPU and does not train the model.
+
+## Common first-run messages
+
+- **Add your private model-bundle dataset:** attach the dataset using Add Input;
+  upload the provided model ZIP, not just the `.ipynb`.
+- **Found more than one manifest:** remove duplicate model-bundle inputs.
+- **Competition test.csv missing:** attach the competition input as well as the
+  private model dataset.
+- **Bundle Python 3.12 != runtime ...:** report the full message; wheels need to
+  be rebuilt for that runtime. Do not turn Internet on to work around it.
+- A red cell or failed saved version: inspect its final error message before
+  submitting. A successful ordinary run is followed by Save & Run All to create
+  the version Kaggle scores.
+
+Official reference: https://www.kaggle.com/docs/competitions#notebooks-only-FAQ
 
 ## Next research step
 
