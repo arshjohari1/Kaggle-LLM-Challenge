@@ -69,8 +69,12 @@ No extra labelled corpus is used.
 The separate `/workspace/venvs/ntl-embeddings` environment uses CPU-only PyTorch
 2.8.0, Transformers 4.57.6 and safetensors 0.7.0. Frozen extraction uses no
 retrieval prompt prefix, max length 512, batch size 16, and CLS/masked-mean pools.
-Downstream classifier/scaler fits use the same outer folds. Final extraction and
-classifier results will be recorded after completion.
+Downstream classifier/scaler fits use the same outer folds. Extraction took 339
+seconds, with no truncation (maximum 381 tokens). Eight pooling/classifier
+settings scored 11.67–15.15%. Six further training-prompt residual settings
+scored 9.52–16.22%. These small retrieval embeddings were not selected. This does
+not establish how larger generative encoders would perform. See
+[all 14 embedding results](../reports/frozen-embeddings-v1/comparison.csv).
 
 ## Validation and retained outputs
 
@@ -83,9 +87,25 @@ competition performance.
 
 Raw OOF predictions, settings, margins, manifests and fold files stay in ignored
 `runs/`. Only class-level aggregates and hashes are committed under `reports/`.
-Final full-data model training, runtime benchmarking and offline bundle validation
-are being prepared. Actual Kaggle execution and free accelerator quotas remain
-unverified; no GPU is exposed here.
+The selected `multi_c150_s020` model was refitted on all 2,699 rows in 33.75
+seconds from clean source commit `9fdd233`, and saved in
+`artifacts/cpu-best-v1/model.joblib` (about 34 MB). The training manifest pins
+versions, data checksum and model checksum. Three-row predictions match the
+official schema and test IDs. The default string-ID path preserves the supplied
+IDs including their leading zeroes.
+
+The final artifact processed 4,000 deterministic samples of real training
+passages in 12.56 seconds including load/validation, with process peak RSS about
+394 MiB. This is a timing check, not evaluation on training passages. The exact
+offline notebook code cells installed the attached wheels with no package index,
+predicted 4,000 rows, wrote/read Parquet, and matched the CLI predictions and
+file checksum exactly. Notebook inference took 14.12 seconds and the entire
+offline install/inference took 20.39 seconds. See [validation evidence](../reports/cpu-v1/offline_validation.json).
+
+The ready local bundle is `artifacts/cpu-kaggle-bundle-v1.zip` (weights plus
+offline wheels), with notebook `notebooks/kaggle_inference.ipynb`. See
+[Kaggle run instructions](kaggle.md). Actual Kaggle execution and free accelerator
+quotas remain unverified; no GPU is exposed here. No leaderboard score is known.
 
 No spending, paid API calls, billable compute, Kaggle submission, acceptance of
 terms on the user's behalf, or publication of competition passages has occurred.

@@ -84,17 +84,19 @@ held-out predictions and presented as an unbiased score.
 
 ## Train and prepare offline inference
 
-Choose a candidate after inspecting actual validation results. Example commands
-below use `union_svm`; this is an example, **not a measured winner**.
+The selected candidate is `multi_c150_s020`, with 37.56% grouped CV balanced
+accuracy. Its full-data model and offline bundle are already in ignored
+`artifacts/cpu-best-v1/` and `artifacts/cpu-kaggle-bundle-v1.zip`. Follow
+[the Kaggle guide](docs/kaggle.md) to use them. To reproduce in new directories:
 
 ```bash
-ntl train --train data/official/train.csv --candidate union_svm --out artifacts/union-svm-v1
-ntl predict --model artifacts/union-svm-v1/model.joblib \
-  --test data/official/test.csv --out artifacts/union-svm-v1/submission.parquet
-ntl benchmark --model artifacts/union-svm-v1/model.joblib \
-  --test data/official/test.csv --rows 4000 --out artifacts/union-svm-v1/benchmark.json
-python scripts/build_kaggle_bundle.py --artifact artifacts/union-svm-v1 \
-  --out artifacts/kaggle-bundle-v1
+ntl train --train data/official/train.csv --candidate multi_c150_s020 --out artifacts/cpu-best-v2
+ntl predict --model artifacts/cpu-best-v2/model.joblib \
+  --test data/official/test.csv --out artifacts/cpu-best-v2/submission.parquet
+ntl benchmark --model artifacts/cpu-best-v2/model.joblib \
+  --test data/official/train.csv --rows 4000 --out artifacts/cpu-best-v2/benchmark.json
+python scripts/build_kaggle_bundle.py --artifact artifacts/cpu-best-v2 \
+  --out artifacts/cpu-kaggle-bundle-v2
 ```
 
 Commands refuse to overwrite run directories and prediction files. Inference is
@@ -106,8 +108,8 @@ The 4,000-row benchmark repeats available test samples; it measures engineering
 cost only and must be repeated with real representative lengths and final model.
 Peak memory is the process high-water mark, not an incremental model allocation.
 
-Attach the contents of `artifacts/kaggle-bundle-v1/` to a Kaggle notebook as an
-input dataset, then import [the notebook](notebooks/kaggle_inference.ipynb).
+Attach the bundle to a Kaggle notebook as a private input dataset, then import
+[the notebook](notebooks/kaggle_inference.ipynb).
 The bundle includes the model, package wheel, dependency wheels, and checksums.
 Its notebook installs from attached wheels with `--no-index` and needs no online
 inference. Build wheels using the **actual Kaggle Python version and platform**;
@@ -157,3 +159,8 @@ HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false \
 
 Extraction caches CLS and masked-mean embeddings. Downstream scaling and
 classifiers fit inside each fold. Encoder weights are not fine-tuned.
+The optional environment and pinned encoder can be reproduced with
+`bash scripts/setup_embeddings.sh`; it verifies the encoder archive checksum
+and never overwrites an unknown existing model directory. This experiment,
+including prompt-residual variants, scored only 9.52–16.22% and is excluded
+from the submission. The CPU inference bundle needs no PyTorch dependency.
