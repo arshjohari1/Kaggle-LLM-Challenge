@@ -11,7 +11,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC
 
 BASELINES = ("word_lr", "char_lr", "union_lr", "union_svm", "style_svm")
-CANDIDATES = BASELINES + ("wide_svm", "punct_svm", "multiview_svm", "wide_rbf", "style_rbf", "style_hgb", "stacked")
+LINEAR_GRID = {f"multi_c{round(c * 100):03d}_s{round(s * 100):03d}": (c, s)
+               for c in (0.15, 0.5, 1.5) for s in (0.05, 0.2, 0.5)}
+CANDIDATES = BASELINES + ("wide_svm", "punct_svm", "multiview_svm", "wide_rbf", "style_rbf", "style_hgb", "stacked", "topic_svm", "cosine_svm") + tuple(LINEAR_GRID)
 
 
 class StyleFeatures(TransformerMixin, BaseEstimator):
@@ -95,11 +97,23 @@ def advanced_features(name):
 def build_model(name, seed=42):
     if name not in CANDIDATES:
         raise ValueError(f"Unknown candidate {name}")
+    if name in LINEAR_GRID:
+        c, weight = LINEAR_GRID[name]
+        features = advanced_features("multiview_svm")
+        features.set_params(transformer_weights={"style": weight})
+        return Pipeline([("features", features), ("classifier", LinearSVC(C=c,
+            class_weight="balanced", dual=True, max_iter=15000, random_state=seed))])
     if name == "stacked":
         from ntl.ensemble import PromptStackClassifier
         return PromptStackClassifier(seed=seed)
+    if name in ("topic_svm", "cosine_svm"):
+        from ntl.kernels import PromptResidualSVC
+        return PromptResidualSVC(rank=24 if name == "topic_svm" else 0, seed=seed)
     if name not in BASELINES:
         features = advanced_features(name)
+        if name == "wide_rbf":
+            from ntl.kernels import FastRbfSVC
+            return Pipeline([("features", features), ("classifier", FastRbfSVC())])
         if name == "style_hgb":
             return Pipeline([("features", features), ("classifier", HistGradientBoostingClassifier(
                 max_iter=180, learning_rate=0.05, max_leaf_nodes=15,

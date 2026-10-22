@@ -49,6 +49,11 @@ def test_model_roundtrip_and_fold_local_vocabulary(candidate, passages, tmp_path
                 for _, part in parts.transformer_list:
                     if hasattr(part, "vocabulary_"):
                         assert "zzz" not in part.vocabulary_
+    if candidate in ("topic_svm", "cosine_svm"):
+        assert model.projection_.shape[1] <= (24 if candidate == "topic_svm" else 0)
+        for _, part in model.features_.transformer_list:
+            if hasattr(part, "vocabulary_"):
+                assert "zzz" not in part.vocabulary_
     file = tmp_path / "model.joblib"
     joblib.dump({"pipeline": model, "labels": LABELS}, file)
     loaded = joblib.load(file)

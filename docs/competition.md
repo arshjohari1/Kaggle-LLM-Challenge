@@ -1,81 +1,75 @@
-# Official verification and access checklist
+# Competition requirements and provenance
 
-Status as of October 21, 2026 (America/Los_Angeles): **unverified**. Requests to
-Kaggle overview, rules, starter notebook, and the data-list API were denied by the
-cloud egress proxy with `403 Forbidden` before reaching Kaggle. This is a network
-policy blocker, not evidence of an invalid competition or missing account access.
+The user confirmed participation requirements have been checked. No further
+eligibility or guardian-consent action is requested by this project.
 
-Network additions were saved to the cloud environment configuration draft for
-`www.kaggle.com`, `kaggle.com`, and `storage.googleapis.com`. Draft saving does
-not apply runtime networking. Review and save in environment settings, then
-publish the environment as directed by the platform. Additional download hosts
-should be added only if an actual authorized request identifies them.
+Public Kaggle access now works. Organizer content was retrieved through the
+website's public APIs: `competitions.CompetitionService/GetCompetition` with
+competitionName=name-that-llm, and `competitions.PageService/ListPages` with
+competitionId 170484. The legacy competition-list endpoint returned 401, but
+organizer pages and public notebooks were available without credentials. No
+private account data were accessed.
 
-There are no configured Kaggle bindings or credentials in the current machine.
-Public-page verification needs network access first. Downloading competition
-data may additionally require signing in and accepting rules in the user's
-account. Uploading the original CSV files here is sufficient for local training;
-no Kaggle credentials are required for this route. Do not put secrets in chat.
+## Confirmed requirements
 
-## Sources to check
+- [Data](https://www.kaggle.com/competitions/name-that-llm/data): 2,699 training
+  passages, 150 prompts, unseen test prompts, about 4,000 hidden passages. Three
+  visible test rows are confirmed by the supplied files and Data page; the
+  Evaluation page's older single-row sentence is inconsistent.
+- [Evaluation](https://www.kaggle.com/competitions/name-that-llm/overview/evaluation):
+  balanced accuracy, all 18 exact labels in `src/ntl/data.py`, and differing
+  public/private class mixes. IDs and predictions are strings.
+- Read `/kaggle/input/competitions/name-that-llm/test.csv`, write
+  `/kaggle/working/submission.parquet`. Every ID appears once, with no nulls or
+  invalid labels. The sample's large_string fields and ordinary Parquet string
+  fields both represent the required logical string values.
+- Code Requirements: notebook submission, Internet disabled, CPU/GPU runtime
+  at most nine hours; freely/publicly available external data and pretrained
+  models permitted.
+- Competition-specific rules section 6: external resources must be publicly and
+  equally accessible at no cost, or meet the organizer's reasonableness standard.
+  This project uses supplied labels and an openly downloadable MIT-licensed
+  encoder. Paid generated data are not used.
+- Rules/metadata: five daily submissions, two final selections, team size five,
+  $50,000 total with ten $5,000 awards. No account/team/submission changes occurred.
 
-- [Overview](https://www.kaggle.com/competitions/name-that-llm/overview)
-- [Data](https://www.kaggle.com/competitions/name-that-llm/data)
-- [Rules](https://www.kaggle.com/competitions/name-that-llm/rules)
-- [Discussions and current organizer replies](https://www.kaggle.com/competitions/name-that-llm/discussion)
-- [Organizer starter](https://www.kaggle.com/code/martynaplomecka/starter-notebook-for-name-that-llm-competition)
-- [Kaggle terms](https://www.kaggle.com/terms)
+## Timeline discrepancy
 
-Before any real submission, record the official source, retrieval date, and exact
-requirement for each item below. The user's earlier research is a starting point,
-not official verification by this project.
+The published Timeline page says **January 13, 2027, 23:59 UTC** (3:59 PM PST),
+while GetCompetition metadata returns `2027-01-14T23:59:00.817Z`. Entry/team-merger
+metadata both say January 6, 2027, 23:59 UTC (3:59 PM PST). Plan for January 13
+until the organizer clarifies; do not assume an extension from the backend field.
+Sources were checked October 21, 2026 Pacific time.
 
-| Item | Supplied description, pending confirmation |
-| --- | --- |
-| Task/metric | 18-class authorship; balanced accuracy |
-| Training | 2,699 rows, 150 prompt groups; id/prompt_id/text/model |
-| Test | Small visible sample; about 4,000 hidden passages, unseen prompts |
-| Labels | Provisional list in `src/ntl/data.py`; verify spelling and all versions |
-| Test location | `/kaggle/input/competitions/name-that-llm/test.csv` |
-| Output | `/kaggle/working/submission.parquet`, id and model; verify ID dtype |
-| Inference | Offline code competition; reported 9-hour CPU/GPU limit |
-| Deadlines | Entry/team January 6, 2027; final January 13, 2027, each 23:59 UTC (3:59 PM PST) |
-| Team/submissions | Reported team size 5, five daily submissions, two final selections |
-| Prizes | Reported $50,000 total, $5,000 for each of places 1–10 |
-| External resources | Public data/models reportedly allowed; verify licensing, access/sharing deadlines and paid generation policy |
+## Public methods reviewed
 
-## Age, guardian consent, and prizes
+- [Organizer starter, v4](https://www.kaggle.com/code/martynaplomecka/starter-notebook-for-name-that-llm-competition):
+  word/character TF-IDF, logistic regression, grouped balanced accuracy, input
+  path and Parquet output.
+- [Dariush Afshar, v2](https://www.kaggle.com/code/dariushafshar/name-that-llm-cv-0-37-tf-idf-svm-baseline):
+  short character n-grams, whitespace words and style features. Fetched source
+  does not compute its advertised CV result; this project's scores are independent.
+- [Mizuno0522, v2](https://www.kaggle.com/code/mizuno0522/model-fingerprints-punctuation-external-data):
+  punctuation/boundary-character hypotheses and external-formatting concerns.
+  No notebook code or external corpus was copied.
+- [OPERA](https://github.com/Ragu-123/namethatllm): README headline and fold
+  scores do not directly agree. Its code is not used and its claims are unverified.
 
-The user is 16. **Eligibility, consent, and prize eligibility are not confirmed.**
-The user and a parent/guardian should review the current Kaggle terms and this
-competition's rules together, including age/residence conditions, who accepts the
-rules, guardian authorization, identity verification, and any separate prize or
-tax paperwork. If the rules do not answer these points, request a written answer
-from Kaggle or the organizer before entering or relying on prize eligibility.
-Do not infer that being able to make an account or upload predictions establishes
-eligibility. Do not provide birth dates, IDs, or private legal documents here.
+Implementation is original. Public notebooks motivate hypotheses; `reports/`
+contains this repository's own measurements.
 
-## Free compute
+## Encoder and networking
 
-This cloud machine exposes approximately 32 GiB RAM, five CPU cores, 30 GiB free
-disk at initial inspection, and no NVIDIA device or `nvidia-smi`. No Kaggle account
-is connected, so GPU availability and remaining free quotas are unknown. Check
-the notebook accelerator quota in your Kaggle account before scheduling neural
-experiments. No paid compute or paid data generation is authorized.
+The public copy is
+[happenmass/bge-small-en-v1.5/transformers/bge/2](https://www.kaggle.com/models/happenmass/bge-small-en-v1.5/transformers/bge/2).
+Kaggle metadata and packaged model card specify MIT. Archive SHA-256:
+`952f6b1903d5a00a38fcbe676fb3c6a454c15a3629a92b9ccd3860a9d97cfbb5`.
+Individual hashes, metadata and original card are retained in `/workspace/models/`.
+The Kaggle artifact is pinned; an upstream Hugging Face commit is not asserted.
+Safetensors weights are used rather than pickle weights.
 
-## Public resources
-
-User-supplied resources, not yet reproduced:
-
-- [TF-IDF/SVM](https://www.kaggle.com/code/dariushafshar/name-that-llm-cv-0-37-tf-idf-svm-baseline/comments)
-- [Frozen embeddings](https://www.kaggle.com/code/qasminumber/name-that-llm-v5)
-- [CPU/prompt effects](https://www.kaggle.com/code/patimakornsrinamen/name-that-llm-the-prompt-hides-the-author-cpu?scriptVersionId=360010467)
-- [Punctuation/external data](https://www.kaggle.com/code/mizuno0522/model-fingerprints-punctuation-external-data)
-- [Data overview](https://www.kaggle.com/code/olegzholobov/name-that-llm-wide-data-overview)
-- [API passages](https://www.kaggle.com/datasets/seyitkaangunes/ntl-extra-api-passages)
-- [OPERA repository](https://github.com/Ragu-123/namethatllm)
-
-The OPERA README was reachable through GitHub. Its headline score and listed fold
-scores do not directly agree; no claim has been accepted as a reproduced result.
-No external code, model, or corpus has been incorporated. Check licenses and
-attribution requirements before reuse.
+Kaggle domains are reachable. Hugging Face returned proxy 403, so optional
+`huggingface.co` and `cas-bridge.xethub.hf.co` additions were saved in the draft.
+The Kaggle copy allowed this experiment without that change. Environment
+publication and actual Kaggle account quotas are separate from local validation.
+There are no paid services or online inference calls in the solution.

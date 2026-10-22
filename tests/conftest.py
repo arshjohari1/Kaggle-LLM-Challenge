@@ -1,7 +1,14 @@
 import pandas as pd
 import pytest
+from threadpoolctl import threadpool_limits
 
 from ntl.data import LABELS
+
+
+@pytest.fixture(autouse=True)
+def bounded_test_threads():
+    with threadpool_limits(limits=1):
+        yield
 
 
 @pytest.fixture

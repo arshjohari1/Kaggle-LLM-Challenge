@@ -32,7 +32,7 @@ def metadata():
     return {
         "created_utc": datetime.now(timezone.utc).isoformat(), "git_commit": commit,
         "git_dirty": dirty, "python": platform.python_version(),
-        "versions": {p: importlib.metadata.version(p) for p in ["numpy", "pandas", "scipy", "scikit-learn", "joblib", "pyarrow"]},
+        "versions": {p: importlib.metadata.version(p) for p in ["name-that-llm", "numpy", "pandas", "scipy", "scikit-learn", "joblib", "pyarrow"]},
     }
 
 
@@ -81,6 +81,8 @@ def evaluate(args):
         for f in sorted(set(folds)):
             tr, va = np.flatnonzero(folds != f), np.flatnonzero(folds == f)
             model = build_model(name, args.seed)
+            if args.cache and hasattr(model, "memory"):
+                model.set_params(memory=joblib.Memory(args.cache, verbose=0))
             t = time.perf_counter()
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always", ConvergenceWarning)
@@ -243,6 +245,7 @@ def main():
     p.add_argument("--candidates", nargs="+", choices=CANDIDATES, default=list(BASELINES))
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--threads", type=int, default=2)
+    p.add_argument("--cache", help="Optional local feature cache; fit cache keys include fold-local text and labels")
     p.set_defaults(func=evaluate)
     p = sub.add_parser("train")
     p.add_argument("--train", required=True)

@@ -4,6 +4,7 @@ Run with the Python version/platform intended for Kaggle. This never uploads dat
 or models and never submits a notebook. Output must be a new directory.
 """
 import argparse
+import importlib.metadata
 import json
 import platform
 import shutil
@@ -31,7 +32,7 @@ def main():
     shutil.copy2(args.artifact / "model.joblib", args.out / "model.joblib")
     shutil.copy2(args.artifact / "manifest.json", args.out / "training_manifest.json")
     write_json(args.out / "ntl_bundle.json", {"python_minor": ".".join(platform.python_version().split(".")[:2]),
-        "platform": platform.platform(), "package": "name-that-llm==0.1.0",
+        "platform": platform.platform(), "package": f"name-that-llm=={importlib.metadata.version('name-that-llm')}",
         "files": {str(p.relative_to(args.out)): fingerprint(p) for p in args.out.rglob("*") if p.is_file()}})
     print(f"Bundle ready locally: {args.out}. Verify Kaggle Python compatibility before uploading.")
 
