@@ -1,9 +1,10 @@
 # Run the prepared CPU solution on Kaggle
 
-The local grouped CV result is 37.56% balanced accuracy; actual leaderboard
-performance is unknown. The full model, 4,000-row runtime check and offline
-installation have been tested locally. No Kaggle notebook version or submission
-has been created automatically.
+The local grouped CV result is 37.56% balanced accuracy. The user successfully
+ran the standalone notebook and submitted version 1, obtaining **0.372 public
+balanced accuracy**. CPU runs did not consume GPU time. No submission was made
+automatically. The next [frozen Qwen GPU experiment](generative.md) has a separate
+notebook and instructions; keep the successful CPU version.
 
 ## Simple route: no model downloads or custom dataset
 
@@ -109,8 +110,8 @@ The current environment has no GPU. This round compared 19 CPU configurations
 and 14 frozen small-encoder configurations using identical prompt groups.
 The nested stack, nonlinear kernels and small BGE embeddings did not beat the
 selected linear model. More complexity is not currently justified by these
-results. The next distinct resource is the user's available **free Kaggle GPU
-quota**, for evaluating a larger, suitably licensed generative encoder and then
-possibly fine-tuning. No GPU job or paid API request has been launched. Purchases
-and billable compute remain unauthorized. Check the account's actual free
-accelerator quota before launching that stage.
+results. The user reports **00:00 / 30:00** free Kaggle GPU hours used/allowed
+and authorized the frozen generative transformer stage. The prepared
+[Qwen3-1.7B-Base notebook](generative.md) uses that GPU after the user starts it.
+No GPU job or paid API request has been launched from this cloud environment.
+Purchases and billable compute remain unauthorized.

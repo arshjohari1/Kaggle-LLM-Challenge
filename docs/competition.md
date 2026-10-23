@@ -28,10 +28,12 @@ private account data were accessed.
   models permitted.
 - Competition-specific rules section 6: external resources must be publicly and
   equally accessible at no cost, or meet the organizer's reasonableness standard.
-  This project uses supplied labels and an openly downloadable MIT-licensed
-  encoder. Paid generated data are not used.
+  This project uses supplied labels, an openly downloadable MIT-licensed
+  encoder, and the Apache-2.0 Qwen model described below. Paid generated data
+  are not used.
 - Rules/metadata: five daily submissions, two final selections, team size five,
-  $50,000 total with ten $5,000 awards. No account/team/submission changes occurred.
+  $50,000 total with ten $5,000 awards. No account/team changes were made by the
+  assistant; the user subsequently submitted the CPU notebook themselves.
 
 ## Timeline discrepancy
 
@@ -68,8 +70,22 @@ Individual hashes, metadata and original card are retained in `/workspace/models
 The Kaggle artifact is pinned; an upstream Hugging Face commit is not asserted.
 Safetensors weights are used rather than pickle weights.
 
-Kaggle domains are reachable. Hugging Face returned proxy 403, so optional
-`huggingface.co` and `cas-bridge.xethub.hf.co` additions were saved in the draft.
-The Kaggle copy allowed this experiment without that change. Environment
-publication and actual Kaggle account quotas are separate from local validation.
-There are no paid services or online inference calls in the solution.
+Kaggle and Hugging Face metadata are reachable. Large Hugging Face weights now
+redirect to `us.aws.cdn.hf.co`, which the current proxy denies; that optional
+domain was added to the saved environment draft without claiming it was applied.
+The official Kaggle mirror downloaded successfully over verified TLS, with
+archive and upstream-weight checksums verified. Environment publication and
+actual Kaggle account quotas are separate from local validation. There are no
+paid services or online inference calls in the solution.
+
+## Generative model provenance (October 23, 2026)
+
+Official [Qwen3-1.7B-Base](https://www.kaggle.com/models/qwen-lm/qwen-3/transformers/1.7b-base/1)
+is published by qwen-lm under Apache-2.0. Public Kaggle model metadata, official
+Hugging Face metadata and the upstream LICENSE were checked. The Kaggle weight
+file matches the upstream weight SHA-256. The packaged tokenizer configuration
+and README differ from the pinned upstream copy, so individual resource hashes
+are recorded rather than claiming an identical full-repository revision.
+See [hashes and reproducible instructions](generative.md#sources-and-local-verification).
+No third-party notebook code or additional labeled corpus is used. Safetensors
+and local-only AutoModel/AutoTokenizer with trust_remote_code=False are required.

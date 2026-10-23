@@ -8,8 +8,10 @@ TF-IDF and linear classifiers before adding expensive neural models.
 completed. Labels, metric, string IDs, inference path, Parquet output, offline
 execution, and nine-hour limits are confirmed against current organizer pages.
 See [current evidence](docs/status.md) and [aggregate experiment reports](reports/).
-Local cross-validation results are not leaderboard scores. No Kaggle submission
-has been made and no spending is authorized.
+The selected CPU model measured **0.37560 grouped CV**; the user's successful
+Kaggle submission scored **0.372 publicly**. No spending is authorized.
+The next [frozen Qwen experiment](docs/generative.md) is prepared for the user's
+free Kaggle GPU; its competition performance has not yet been measured.
 
 ## Install
 

@@ -78,7 +78,7 @@ not establish how larger generative encoders would perform. See
 
 ## Validation and retained outputs
 
-33 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
+38 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
 fold-local style scaling, all model round trips, inner stack folds, kernel
 numerical equivalence and positive semidefiniteness, corrupt-artifact rejection,
 stale-fold rejection, and the full CLI/submission path. Thread limits prevent
@@ -104,8 +104,33 @@ offline install/inference took 20.39 seconds. See [validation evidence](../repor
 
 The ready local bundle is `artifacts/cpu-kaggle-bundle-v1.zip` (weights plus
 offline wheels), with notebook `notebooks/kaggle_inference.ipynb`. See
-[Kaggle run instructions](kaggle.md). Actual Kaggle execution and free accelerator
-quotas remain unverified; no GPU is exposed here. No leaderboard score is known.
+[Kaggle run instructions](kaggle.md). The user subsequently ran the standalone
+CPU notebook twice, saved version 1, and submitted it successfully. Their
+screenshot reports **0.372 public balanced accuracy**. This is a real Kaggle
+score, separate from the local 0.37560 selection result. No GPU is exposed here.
 
-No spending, paid API calls, billable compute, Kaggle submission, acceptance of
-terms on the user's behalf, or publication of competition passages has occurred.
+No spending, paid API calls, billable compute, automatic Kaggle submission,
+acceptance of terms on the user's behalf, or publication of competition passages
+has occurred.
+
+## Frozen generative transformer prepared
+
+The user authorized this stage and reports **00:00 / 30:00 GPU hours** on Kaggle
+(zero used of thirty). The earlier screenshot of Benchmarks AI dollar credits
+was a separate quota. No Kaggle GPU has been launched from this workspace.
+
+The new main body is the Apache-2.0 official **Qwen3-1.7B-Base** model, frozen
+with four feature pools and two SVM heads. The original five-fold assignment is
+embedded as fold numbers by sorted prompt rank and verified against both the
+original training-file and fold-file SHA-256 values. All scaler/head fits remain
+fold-local. Extraction caches resume batches and verify checksums; downstream
+reports include OOF margins, per-class recall, confusion matrices and length
+slices. Full-data refitting produces a dynamic offline Parquet submission.
+
+The actual official weights passed the CPU functional checks documented in
+[the integration report](../reports/qwen-frozen-v1/cpu_integration.json).
+The test suite also verifies held-out prompts cannot influence feature scaling
+and that the generated self-contained notebook embeds exactly the tested source.
+**No full Qwen competition CV, GPU runtime or Qwen leaderboard score is measured
+yet.** The next required execution is on the user's free Kaggle GPU; follow
+[the exact steps](generative.md) and share the final RESULT TO SHARE block.
