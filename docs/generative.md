@@ -77,6 +77,13 @@ changes, not to choose among many weak local experiments.
 
 ## What to send if something fails
 
+If the notebook reports **Attach the Name That LLM competition data**, choose
+**Add Input → Competitions**, search **Name That LLM**, and click **Add**. Expand
+the input to confirm `train.csv` and `test.csv` appear. Adding the Qwen model
+does not attach the competition CSVs. The updated script searches alternative
+input folder layouts and prints the directory it finds. Replace the existing
+code cell with the latest GitHub file if using the original fixed-path version.
+
 Copy the final error and the GPU/package version lines. The notebook deliberately
 stops if no GPU is enabled, the wrong weights are attached, data/folds changed,
 or extraction produces invalid features. Qwen3 needs Transformers 4.51 or newer.

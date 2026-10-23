@@ -71,6 +71,25 @@ def check_frame(frame, columns):
             raise ValueError(f"Invalid or blank {column}")
 
 
+def discover_data(input_root):
+    """Prefer official mounts; find an unambiguous train/test pair elsewhere."""
+    root = Path(input_root)
+    for path in (root / "competitions/name-that-llm", root / "name-that-llm"):
+        if (path / "train.csv").is_file() and (path / "test.csv").is_file():
+            return path
+    matches = sorted({path.parent for path in root.rglob("train.csv")
+                      if (path.parent / "test.csv").is_file()})
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise RuntimeError("Multiple train.csv/test.csv pairs found. Remove duplicate data inputs so the intended test file is unambiguous: "
+                           + ", ".join(str(path) for path in matches))
+    visible = sorted(str(path.relative_to(root)) for path in root.rglob("*.csv"))[:20]
+    raise RuntimeError("Attach the Name That LLM competition data using Add Input → Competitions → Name That LLM → Add. "
+                       "The notebook needs train.csv and test.csv together. Visible CSV files: "
+                       + (", ".join(visible) if visible else "none"))
+
+
 def discover_model(input_root):
     matches = []
     for config in Path(input_root).rglob("config.json"):
@@ -293,10 +312,8 @@ def run_kaggle():
     work = Path("/kaggle/working")
     out = work / "qwen-frozen-v1"
     out.mkdir(parents=True, exist_ok=True)
-    options = [Path("/kaggle/input/competitions/name-that-llm"), Path("/kaggle/input/name-that-llm")]
-    data = next((path for path in options if (path / "train.csv").is_file() and (path / "test.csv").is_file()), None)
-    if data is None:
-        raise RuntimeError("Attach the Name That LLM competition data using Add Input")
+    data = discover_data("/kaggle/input")
+    print("Competition data found:", data, flush=True)
     train = pd.read_csv(data / "train.csv", dtype=str, keep_default_na=False)
     test = pd.read_csv(data / "test.csv", dtype=str, keep_default_na=False)
     check_frame(train, ["id", "prompt_id", "text", "model"])

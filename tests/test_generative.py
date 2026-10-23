@@ -9,6 +9,40 @@ import pytest
 from ntl import generative as g
 
 
+@pytest.mark.parametrize("folder", ["competitions/name-that-llm", "name-that-llm",
+                                    "datasets/user/custom-data", "renamed-input/nested/files"])
+def test_data_discovery_supports_kaggle_mount_layouts(tmp_path, folder):
+    data = tmp_path / folder
+    data.mkdir(parents=True)
+    (data / "train.csv").touch()
+    (data / "test.csv").touch()
+    assert g.discover_data(tmp_path) == data
+
+
+@pytest.mark.parametrize("filename", [None, "train.csv"])
+def test_missing_data_reports_visible_files_and_attachment_steps(tmp_path, filename):
+    if filename:
+        (tmp_path / filename).touch()
+    with pytest.raises(RuntimeError, match="Add Input → Competitions") as error:
+        g.discover_data(tmp_path)
+    assert (filename or "none") in str(error.value)
+
+
+def test_data_discovery_prefers_official_input_and_rejects_ambiguous_fallback(tmp_path):
+    for folder in ("copy-a", "copy-b"):
+        data = tmp_path / folder
+        data.mkdir()
+        (data / "train.csv").touch()
+        (data / "test.csv").touch()
+    with pytest.raises(RuntimeError, match="Multiple"):
+        g.discover_data(tmp_path)
+    official = tmp_path / "competitions/name-that-llm"
+    official.mkdir(parents=True)
+    (official / "train.csv").touch()
+    (official / "test.csv").touch()
+    assert g.discover_data(tmp_path) == official
+
+
 def test_submission_preserves_ids_and_rejects_invalid_labels(tmp_path):
     frame = pd.DataFrame({"id": ["0001", "0020"], "text": ["a", "b"]})
     path = g.write_submission(frame, ["model-a", "model-b"], ["model-a", "model-b"], tmp_path)

@@ -78,7 +78,7 @@ not establish how larger generative encoders would perform. See
 
 ## Validation and retained outputs
 
-38 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
+45 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
 fold-local style scaling, all model round trips, inner stack folds, kernel
 numerical equivalence and positive semidefiniteness, corrupt-artifact rejection,
 stale-fold rejection, and the full CLI/submission path. Thread limits prevent
