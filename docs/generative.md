@@ -5,8 +5,11 @@ user's successful Kaggle submission scored **0.372 on the public leaderboard**.
 These are separate measurements. The user subsequently reported **0.35119 grouped
 CV** for frozen Qwen, with `middle_mean_linear` selected and 16.52 minutes elapsed
 on a Tesla T4. This is 2.44 percentage points below the CPU model. Qwen has no
-reported leaderboard score; the full experiment reports are pending. Preserve
-the CPU model and inspect paired OOF errors before deciding on another experiment.
+reported leaderboard score. The full experiment reports were received and
+verified. A fixed equal-rank combination with CPU scores measured **0.40933**
+on existing held-out predictions, improving all five folds. See the
+[paired analysis and its limitations](../reports/qwen-frozen-v1/analysis.md).
+Preserve the CPU submission while preparing and checking the ensemble pipeline.
 
 ## What is changing
 

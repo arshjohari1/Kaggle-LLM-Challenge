@@ -138,9 +138,31 @@ three-row submission passed the format checks. This is 2.44 percentage points
 below the selected CPU model's grouped score, and is not a leaderboard score.
 See [the reported result](../reports/qwen-frozen-v1/kaggle_user_result.json).
 
-The full run manifest, eight-candidate comparison and OOF predictions have not
-been received or independently checked here. Preserve the CPU model and its
-0.372 public submission. Next inspect the reports and paired OOF errors for
-complementarity before an ensemble or further GPU training. The historical
-local CPU integration/fold-verification reports describe their original checks;
-their unrun GPU fields do not describe this subsequent user-run experiment.
+All six requested files were subsequently received and retained privately in
+`runs/qwen-kaggle-v1-received-20261023/`, with a verified separate ZIP in
+`artifacts/qwen-kaggle-v1-reports.zip`. Input file hashes and non-row-level
+reports are preserved in Git. Uploaded file IDs are retained only in the private
+receipt manifest, for possible re-download. Raw IDs/predictions and margins are
+not committed. Future raw-file access depends on retaining the workspace or its
+snapshot; Git alone cannot restore private outputs. The entire six-file upload
+is 318,167 bytes, with a roughly 199 KiB ZIP backup including its manifest.
+
+`scripts/analyze_qwen_reports.py` verified data/fold hashes, all 2,699 row IDs and
+fold assignments, labels, eight candidate summaries, finite margins, and
+reconstructed class recalls/confusion matrices. It reproduced both CPU and Qwen
+scores. Qwen was correct on **417 CPU errors**; CPU was correct on **483 Qwen
+errors**, and both were correct on 531 rows. Fixed equal-weight per-passage rank
+averaging of their decision scores (CPU scores break exact ties) measured
+**0.4093263733532189**, a **3.37 percentage-point** gain over CPU, improving all
+five folds and all three length slices. No ensemble weights, thresholds or
+calibration were fitted on held-out labels. Already-selected base models and
+reused folds still create selection optimism. The conditional paired-prompt
+bootstrap interval for the gain is about **1.71–5.07 percentage points** and
+excludes refitting uncertainty and selection effects.
+
+Preserve the CPU model and its 0.372 public submission. The next candidate is a
+full CPU/Qwen rank-blend inference notebook before further GPU training; the
+blend has not been runtime-tested as a full pipeline or submitted. See
+[paired findings](../reports/qwen-frozen-v1/analysis.md). The historical local
+CPU integration/fold-verification reports describe their original checks;
+their unrun GPU fields do not describe the subsequent user-run experiment.
