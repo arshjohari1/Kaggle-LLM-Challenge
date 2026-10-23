@@ -5,6 +5,40 @@ performance is unknown. The full model, 4,000-row runtime check and offline
 installation have been tested locally. No Kaggle notebook version or submission
 has been created automatically.
 
+## Simple route: no model downloads or custom dataset
+
+The standalone version trains the same selected SVM directly on the competition
+training CSV, then predicts the test CSV. This uses Kaggle's preinstalled
+scientific Python packages, so no model ZIP, custom dataset, pip installation,
+GPU or Internet access is required during execution. Package versions are
+recorded in `training_info.json`; retraining avoids serialized-model version
+compatibility requirements.
+
+1. Open the [pasteable Python file](https://github.com/arshjohari1/Kaggle-LLM-Challenge/blob/main/notebooks/kaggle_train_and_submit.py).
+   In GitHub's file toolbar, click **Copy raw file** (the overlapping-squares
+   icon). Copy the full file, without line numbers.
+2. Open the competition's [Code tab](https://www.kaggle.com/competitions/name-that-llm/code)
+   and click **New Notebook**. Paste the copied Python into a code cell. Remove
+   any unused starter code cells so only the submission code runs.
+3. Confirm Name That LLM competition data is attached under Inputs. Choose
+   **Accelerator: None** and **Internet: Off**.
+4. Run All. It trains on all 2,699 labelled passages and creates
+   `/kaggle/working/submission.parquet`. Look for **SUCCESS** and **Submission
+   rows: 3** with the current visible data. CPU training takes tens of seconds
+   locally; actual Kaggle time depends on the machine.
+5. Click **Save Version > Save & Run All**, wait for success, then choose
+   **Submit to Competition** for that saved version. Check **My Submissions**
+   for the public leaderboard score.
+
+Alternatively, open the [standalone notebook](https://github.com/arshjohari1/Kaggle-LLM-Challenge/blob/main/notebooks/kaggle_train_and_submit.ipynb),
+use GitHub's **Download raw file** button, then **File > Import Notebook** in
+Kaggle. It contains the same code split into cells. No extra model assets are
+needed. Training the final model on all training passages is intentional; the
+37.56% validation score was measured separately using held-out prompt groups.
+This notebook does not calculate or claim an in-sample accuracy score.
+
+## Alternative: use the pre-trained model bundle
+
 1. Retain/publish the prepared cloud environment snapshot if you want the local
    data, fitted models, caches and Python environments in future tasks. Git
    contains code and aggregate reports; trained artifacts are intentionally

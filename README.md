@@ -84,6 +84,12 @@ held-out predictions and presented as an unbiased score.
 
 ## Train and prepare offline inference
 
+For the simplest Kaggle route, use the [standalone train-and-submit notebook](notebooks/kaggle_train_and_submit.ipynb)
+or [copyable Python file](notebooks/kaggle_train_and_submit.py). It trains the
+selected model directly on Kaggle using the attached competition data and
+preinstalled packages, without downloading our model bundle or using a GPU.
+See the [no-download instructions](docs/kaggle.md#simple-route-no-model-downloads-or-custom-dataset).
+
 The selected candidate is `multi_c150_s020`, with 37.56% grouped CV balanced
 accuracy. Its full-data model and offline bundle are already in ignored
 `artifacts/cpu-best-v1/` and `artifacts/cpu-kaggle-bundle-v1.zip`. Follow
