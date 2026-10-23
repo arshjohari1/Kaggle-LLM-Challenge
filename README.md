@@ -10,8 +10,9 @@ execution, and nine-hour limits are confirmed against current organizer pages.
 See [current evidence](docs/status.md) and [aggregate experiment reports](reports/).
 The selected CPU model measured **0.37560 grouped CV**; the user's successful
 Kaggle submission scored **0.372 publicly**. No spending is authorized.
-The next [frozen Qwen experiment](docs/generative.md) is prepared for the user's
-free Kaggle GPU; its competition performance has not yet been measured.
+The user ran the [frozen Qwen experiment](docs/generative.md) on a free Kaggle
+Tesla T4: **0.35119 grouped CV**, 16.52 minutes, below the CPU model. Its
+leaderboard performance is unmeasured; full reports are pending.
 
 ## Install
 

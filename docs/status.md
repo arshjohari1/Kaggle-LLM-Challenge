@@ -113,7 +113,7 @@ No spending, paid API calls, billable compute, automatic Kaggle submission,
 acceptance of terms on the user's behalf, or publication of competition passages
 has occurred.
 
-## Frozen generative transformer prepared
+## Frozen generative transformer result
 
 The user authorized this stage and reports **00:00 / 30:00 GPU hours** on Kaggle
 (zero used of thirty). The earlier screenshot of Benchmarks AI dollar credits
@@ -131,6 +131,16 @@ The actual official weights passed the CPU functional checks documented in
 [the integration report](../reports/qwen-frozen-v1/cpu_integration.json).
 The test suite also verifies held-out prompts cannot influence feature scaling
 and that the generated self-contained notebook embeds exactly the tested source.
-**No full Qwen competition CV, GPU runtime or Qwen leaderboard score is measured
-yet.** The next required execution is on the user's free Kaggle GPU; follow
-[the exact steps](generative.md) and share the final RESULT TO SHARE block.
+The user subsequently supplied a successful Kaggle run's final log:
+`middle_mean_linear` achieved **0.3511881680338056 grouped balanced accuracy**,
+with **16.524883034566667 minutes** elapsed on **Tesla T4**. The visible
+three-row submission passed the format checks. This is 2.44 percentage points
+below the selected CPU model's grouped score, and is not a leaderboard score.
+See [the reported result](../reports/qwen-frozen-v1/kaggle_user_result.json).
+
+The full run manifest, eight-candidate comparison and OOF predictions have not
+been received or independently checked here. Preserve the CPU model and its
+0.372 public submission. Next inspect the reports and paired OOF errors for
+complementarity before an ensemble or further GPU training. The historical
+local CPU integration/fold-verification reports describe their original checks;
+their unrun GPU fields do not describe this subsequent user-run experiment.

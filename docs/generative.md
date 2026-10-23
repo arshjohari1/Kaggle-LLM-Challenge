@@ -2,8 +2,11 @@
 
 The existing CPU model scored **0.37560 in grouped local validation** and the
 user's successful Kaggle submission scored **0.372 on the public leaderboard**.
-These are separate measurements. The new transformer has no measured competition
-score yet. Start with its frozen version; consider fine-tuning after evaluating it.
+These are separate measurements. The user subsequently reported **0.35119 grouped
+CV** for frozen Qwen, with `middle_mean_linear` selected and 16.52 minutes elapsed
+on a Tesla T4. This is 2.44 percentage points below the CPU model. Qwen has no
+reported leaderboard score; the full experiment reports are pending. Preserve
+the CPU model and inspect paired OOF errors before deciding on another experiment.
 
 ## What is changing
 
@@ -57,8 +60,9 @@ optimism; it is not a guaranteed leaderboard score.
    all labeled passages, and writes `submission.parquet` for the supplied test
    rows. It also times the classifier on 4,000 representative feature rows;
    that timing is not an accuracy test. Extraction progress includes an estimate
-   of remaining time after actual batches. Full GPU runtime has not been measured
-   here, so do not treat a fixed minute estimate as established.
+   of remaining time after actual batches. The user's first run reported 16.52
+   minutes on a Tesla T4 with the three-row visible test. Hidden-test reruns and
+   other sessions can take longer; elapsed script time excludes idle session use.
 7. Copy the final **RESULT TO SHARE** block into chat, together with the eight
    scores if possible. Full results are under
    `/kaggle/working/qwen-frozen-v1/summary.json` and `comparison.csv`; per-class
@@ -122,6 +126,8 @@ evaluation. Preserve the CPU submission if neither improves on it.
   unchanged parameters, completed/partial cache recovery, changed-text isolation
   and corrupt-cache rejection. Synthetic examples are not competition results.
   GPU execution and full transformer grouped CV remain unrun in this cloud machine.
+  The separate [user-reported Kaggle result](../reports/qwen-frozen-v1/kaggle_user_result.json)
+  records the later T4 run; it is not an independent cloud reproduction.
 
 For local reproduction with the optional environment:
 
