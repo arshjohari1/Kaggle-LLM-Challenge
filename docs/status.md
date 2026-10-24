@@ -162,7 +162,7 @@ excludes refitting uncertainty and selection effects.
 
 Preserve the CPU model and its 0.372 public submission. The next candidate is the
 implemented CPU/Qwen rank-blend inference notebook before further GPU training;
-its user-run GPU execution now reproduces the score, with leaderboard performance pending. See
+its user-run GPU execution reproduces the score and its reported public score is 0.417. See
 [paired findings](../reports/qwen-frozen-v1/analysis.md). The historical local
 CPU integration/fold-verification reports describe their original checks;
 their unrun GPU fields do not describe the subsequent user-run experiment.
@@ -205,7 +205,21 @@ Six original reports and upload IDs are retained privately under
 `artifacts/combined-kaggle-v1-reports.zip`. Safe aggregates and hash receipts are
 committed under `reports/combined-v1/`. Retaining the workspace/snapshot preserves
 raw outputs; Git alone does not. See `kaggle_verification.json` there. Recommend
-submitting a successful Save & Run All version next, while preserving the CPU
-submission as reference. No combined leaderboard score or automatic submission
-is claimed. The extra dictionary printed after SUCCESS is the final function's
+preserving both submitted versions as references. The user subsequently
+submitted the combined notebook and reports **0.417 public balanced accuracy**,
+up from **0.372** for CPU: **4.5 percentage points**. The combined private score
+and exact notebook version number are unknown; the public score was not fetched
+independently. See `reports/combined-v1/public_result.json`. No automatic submission
+was performed. The extra dictionary printed after SUCCESS is the final function's
 returned report displayed by Jupyter, not an error or another training run.
+
+## Recommended next experiment
+
+Preserve the 0.417 submission unchanged. Next evaluate frozen Qwen3-8B-Base with
+the same prompt folds, token limit and classifier recipe before fine-tuning.
+Verify the public model license/version, free GPU quota, two-GPU placement and
+memory/runtime in a small extraction pilot first. Compare both standalone
+performance and complementarity with existing models; the 417 earlier Qwen-only
+correct predictions show why standalone accuracy is insufficient. A larger
+model has no measured improvement here yet. Parameter-efficient fine-tuning of
+the more promising backbone follows if resources and validation support it.

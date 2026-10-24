@@ -3,10 +3,13 @@
 Qwen correctly identified **417 passages missed by the CPU model** in our
 original paired validation. The fixed rank blend measured **40.93% balanced
 accuracy**, versus CPU's 37.56% and frozen Qwen's 35.12%. Those are model-selection
-results on reused prompt folds; the blend has no leaderboard score yet.
+results on reused prompt folds. The user subsequently submitted the combined
+notebook and reports **0.417 public balanced accuracy**, versus 0.372 for CPU.
+This is a 4.5 percentage-point public gain; the private score is unknown.
 The user's combined Kaggle run reproduced all three scores exactly in **15.85
 minutes**, and all six supplied reports were verified against original data,
-folds and the production ranking rule. This now supports a formal submission.
+folds and the production ranking rule. The submitted version number has not
+been provided, and the public score is user-reported rather than API-retrieved.
 
 Each passage gets 18 decision scores from the CPU TF-IDF/style SVM and 18 from
 the frozen Qwen middle-layer mean + linear SVM. We rank each set separately,

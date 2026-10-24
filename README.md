@@ -17,8 +17,9 @@ equal-rank blend of its held-out scores with the CPU model measured **0.40933**
 on the existing folds. This is an exploratory ensemble result, not a leaderboard
 score. The [combined submission notebook](docs/combined.md) is now implemented
 with local functional checks and a successful user-run Kaggle execution that
-reproduced **0.40933** in 15.85 minutes. The combined leaderboard score is
-pending. See [paired analysis](reports/qwen-frozen-v1/analysis.md).
+reproduced **0.40933** in 15.85 minutes. The user submitted it and reports
+**0.417 public balanced accuracy**, up from the CPU submission's 0.372.
+The private score is unknown. See [paired analysis](reports/qwen-frozen-v1/analysis.md).
 
 ## Install
 
