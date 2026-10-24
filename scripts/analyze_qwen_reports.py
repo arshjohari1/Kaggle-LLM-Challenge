@@ -9,10 +9,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import rankdata
 from sklearn.metrics import balanced_accuracy_score, confusion_matrix, recall_score
 
 from ntl.generative import CPU_OOF_SCORE, FOLD_SHA256, TRAIN_SHA256, sha256_file, write_json
+from ntl.combined import rank_blend
 
 
 def require(condition, message):
@@ -74,9 +74,7 @@ def main():
 
     # Predefined equal rank averaging avoids mixing incomparable raw score scales.
     # On exact rank-sum ties prefer the CPU decision score; no labels tune this rule.
-    rank_sum = rankdata(cpu_margins, axis=1) + rankdata(qwen_margins, axis=1)
-    tie_break = (cpu_margins - cpu_margins.min(axis=1, keepdims=True)) / np.maximum(np.ptp(cpu_margins, axis=1, keepdims=True), 1e-12)
-    blend_prediction = labels[(rank_sum + 1e-6 * tie_break).argmax(axis=1)]
+    blend_prediction = labels[rank_blend(cpu_margins, qwen_margins)]
     blend_score = float(balanced_accuracy_score(y, blend_prediction))
     cpu_correct, qwen_correct = cpu_prediction == y, qwen_prediction == y
     outcome = {"both_correct": int(sum(cpu_correct & qwen_correct)),

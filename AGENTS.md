@@ -24,3 +24,8 @@
   provenance for real experiments. Audit licenses before using external resources.
 - Prefer small reproducible CPU baselines; only expand to embeddings, fine-tuning,
   or ensembles when access, compute, rules, and measured results support them.
+- Preserve the measured complementarity: frozen Qwen correctly identified 417
+  passages missed by the CPU model in the original OOF reports. The fixed equal
+  rank blend scored 0.4093263733532189 on those reused folds. These historical
+  facts motivate the blend; they are not test-time routing rules or a promised
+  leaderboard score. See reports/qwen-frozen-v1/analysis.md and docs/combined.md.

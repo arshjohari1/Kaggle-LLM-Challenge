@@ -133,8 +133,10 @@ def load_frozen(model_dir, allow_cpu=False):
     tokenizer.padding_side = "right"
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
+    version = tuple(int(part) for part in importlib.metadata.version('transformers').split('.')[:2])
+    dtype_option = {'dtype': dtype} if version >= (4, 56) else {'torch_dtype': dtype}
     model = AutoModel.from_pretrained(model_dir, local_files_only=True, trust_remote_code=False,
-                                     use_safetensors=True, torch_dtype=dtype, attn_implementation="sdpa")
+                                     use_safetensors=True, attn_implementation="sdpa", **dtype_option)
     model.requires_grad_(False).eval().to(device)
     provenance = {"repo": MODEL_REPO, "upstream_weight_revision": MODEL_REVISION,
                   "source": "qwen-lm/qwen-3/transformers/1.7b-base/1", "license": "Apache-2.0",

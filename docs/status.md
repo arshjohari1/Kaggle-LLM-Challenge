@@ -78,7 +78,7 @@ not establish how larger generative encoders would perform. See
 
 ## Validation and retained outputs
 
-45 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
+49 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
 fold-local style scaling, all model round trips, inner stack folds, kernel
 numerical equivalence and positive semidefiniteness, corrupt-artifact rejection,
 stale-fold rejection, and the full CLI/submission path. Thread limits prevent
@@ -160,9 +160,29 @@ reused folds still create selection optimism. The conditional paired-prompt
 bootstrap interval for the gain is about **1.71–5.07 percentage points** and
 excludes refitting uncertainty and selection effects.
 
-Preserve the CPU model and its 0.372 public submission. The next candidate is a
-full CPU/Qwen rank-blend inference notebook before further GPU training; the
-blend has not been runtime-tested as a full pipeline or submitted. See
+Preserve the CPU model and its 0.372 public submission. The next candidate is the
+implemented CPU/Qwen rank-blend inference notebook before further GPU training;
+full GPU execution and leaderboard performance remain untested. See
 [paired findings](../reports/qwen-frozen-v1/analysis.md). The historical local
 CPU integration/fold-verification reports describe their original checks;
 their unrun GPU fields do not describe the subsequent user-run experiment.
+
+## Combined submission implemented
+
+`notebooks/kaggle_combined.py` and `.ipynb` embed the tested CPU features, frozen
+Qwen extraction and `src/ntl/combined.py`. The historical 417 complementary
+answers and exact 0.4093263733532189 score are preserved and checked by the
+integration script. The inference rule matches the diagnostic, with explicit
+class ordering and CPU-score tie breaking. The notebook repeats fixed five-fold
+validation for the two fixed classifiers and blend, then fits both on all labels,
+benchmarks actual full-data heads at 4,000-row scale, and writes dynamic Parquet
+predictions. It needs competition data, the same official Qwen input, free GPU,
+and Internet Off. See [exact Kaggle steps](combined.md).
+
+The 49-test suite includes a complete synthetic 4,000-row execution of the
+training/validation/output workflow. The separate real-weight CPU check uses
+Qwen on 18 actual passages, a full-data CPU fit, and a 4,000-row prediction and
+Parquet round trip. That small Qwen head does not establish full-head or GPU
+runtime; see `reports/combined-v1/local_validation.json`. Modern Transformers
+use `dtype=`; older versions retain the supported legacy keyword. No additional
+GPU run, fine-tuning, purchase or competition submission was performed here.

@@ -15,7 +15,9 @@ Tesla T4: **0.35119 grouped CV**, 16.52 minutes, below the CPU model. Its
 leaderboard performance is unmeasured. Received reports were verified; a fixed
 equal-rank blend of its held-out scores with the CPU model measured **0.40933**
 on the existing folds. This is an exploratory ensemble result, not a leaderboard
-score or a tested full submission pipeline. See [paired analysis](reports/qwen-frozen-v1/analysis.md).
+score. The [combined submission notebook](docs/combined.md) is now implemented
+with local functional checks; its full GPU run is still to be performed on
+Kaggle. See [paired analysis](reports/qwen-frozen-v1/analysis.md).
 
 ## Install
 
