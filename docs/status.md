@@ -162,7 +162,7 @@ excludes refitting uncertainty and selection effects.
 
 Preserve the CPU model and its 0.372 public submission. The next candidate is the
 implemented CPU/Qwen rank-blend inference notebook before further GPU training;
-full GPU execution and leaderboard performance remain untested. See
+its user-run GPU execution now reproduces the score, with leaderboard performance pending. See
 [paired findings](../reports/qwen-frozen-v1/analysis.md). The historical local
 CPU integration/fold-verification reports describe their original checks;
 their unrun GPU fields do not describe the subsequent user-run experiment.
@@ -186,3 +186,26 @@ Parquet round trip. That small Qwen head does not establish full-head or GPU
 runtime; see `reports/combined-v1/local_validation.json`. Modern Transformers
 use `dtype=`; older versions retain the supported legacy keyword. No additional
 GPU run, fine-tuning, purchase or competition submission was performed here.
+
+## Combined Kaggle execution verified
+
+The user ran the combined notebook successfully and supplied all six requested
+reports. Independent reconstruction from the 2,699 aligned OOF rows and both
+score matrices reproduces CPU **0.37560278399204566**, Qwen
+**0.3511881680338056**, and combined **0.4093263733532189**, including **417**
+Qwen-correct CPU errors. Both classifiers are beaten by the blend in all five
+folds. Original data/fold hashes, labels, class recalls, confusion matrix and
+all combined predictions match. The run took **15.85 minutes**; actual full-head
+combined prediction on 4,000 cached feature rows took **27.88 seconds**, excluding
+transformer extraction. The visible three-row submission passed notebook checks;
+the Parquet itself was not uploaded or independently inspected here.
+
+Six original reports and upload IDs are retained privately under
+`runs/combined-kaggle-v1-received/`, with checksum-verified archive
+`artifacts/combined-kaggle-v1-reports.zip`. Safe aggregates and hash receipts are
+committed under `reports/combined-v1/`. Retaining the workspace/snapshot preserves
+raw outputs; Git alone does not. See `kaggle_verification.json` there. Recommend
+submitting a successful Save & Run All version next, while preserving the CPU
+submission as reference. No combined leaderboard score or automatic submission
+is claimed. The extra dictionary printed after SUCCESS is the final function's
+returned report displayed by Jupyter, not an error or another training run.

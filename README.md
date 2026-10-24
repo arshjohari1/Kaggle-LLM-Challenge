@@ -16,8 +16,9 @@ leaderboard performance is unmeasured. Received reports were verified; a fixed
 equal-rank blend of its held-out scores with the CPU model measured **0.40933**
 on the existing folds. This is an exploratory ensemble result, not a leaderboard
 score. The [combined submission notebook](docs/combined.md) is now implemented
-with local functional checks; its full GPU run is still to be performed on
-Kaggle. See [paired analysis](reports/qwen-frozen-v1/analysis.md).
+with local functional checks and a successful user-run Kaggle execution that
+reproduced **0.40933** in 15.85 minutes. The combined leaderboard score is
+pending. See [paired analysis](reports/qwen-frozen-v1/analysis.md).
 
 ## Install
 

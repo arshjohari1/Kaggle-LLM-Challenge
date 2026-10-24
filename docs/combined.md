@@ -4,6 +4,9 @@ Qwen correctly identified **417 passages missed by the CPU model** in our
 original paired validation. The fixed rank blend measured **40.93% balanced
 accuracy**, versus CPU's 37.56% and frozen Qwen's 35.12%. Those are model-selection
 results on reused prompt folds; the blend has no leaderboard score yet.
+The user's combined Kaggle run reproduced all three scores exactly in **15.85
+minutes**, and all six supplied reports were verified against original data,
+folds and the production ranking rule. This now supports a formal submission.
 
 Each passage gets 18 decision scores from the CPU TF-IDF/style SVM and 18 from
 the frozen Qwen middle-layer mean + linear SVM. We rank each set separately,
@@ -40,8 +43,8 @@ time. Both contribute to every prediction.
    `combined-v1/summary.json` and `combined-v1/validation.json`. The new
    validation score may differ slightly with library versions or numerical
    precision. It is calculated from this run, rather than printing 40.93% as a
-   fresh result. Rough planning budget: **20–35 minutes on a T4** for visible
-   data, based on the previous 16.52-minute run; actual combined GPU time is unmeasured.
+   fresh result. The first combined visible-data run took **15.85 minutes**;
+   other sessions and hidden-test runs may take longer.
 7. If successful and validation remains promising, **Save Version → Save & Run
    All**, wait for the completed version, then **Submit to Competition**. Fresh
    saved runs may repeat extraction and consume more GPU time. Kaggle's hidden
@@ -66,6 +69,11 @@ weights on 18 real passages and a CPU classifier fitted on all 2,699 rows,
 then writes and reads 4,000 predictions. That functional head is trained on only
 18 passages; its timing excludes extraction and does not establish full-model
 GPU or hidden-test runtime. See [the evidence](../reports/combined-v1/local_validation.json).
+The subsequent user GPU run and uploaded reports are separately checked in
+[`kaggle_verification.json`](../reports/combined-v1/kaggle_verification.json).
+Jupyter may display the returned report dictionary after SUCCESS because
+`run_combined()` is the cell's last expression. This is harmless and does not
+repeat execution.
 
 Reproduce with `python scripts/build_combined_notebook.py`, core `python -m
 pytest -q`, and optional embeddings environment `python scripts/check_combined.py`.
