@@ -160,12 +160,15 @@ def pool_hidden(hidden_states, attention_mask, layers):
     vectors = []
     for layer in layers:
         state = hidden_states[layer].float()
-        vectors.append((state * mask.unsqueeze(-1)).sum(dim=1) / mask.sum(dim=1, keepdim=True))
-    vectors.append(hidden_states[layers[-1]][rows, last].float())
+        local_mask = mask.to(state.device)
+        vectors.append(((state * local_mask.unsqueeze(-1)).sum(dim=1) /
+                        local_mask.sum(dim=1, keepdim=True)).to(mask.device))
+    final = hidden_states[layers[-1]]
+    vectors.append(final[rows.to(final.device), last.to(final.device)].float().to(mask.device))
     return torch.stack([torch.nn.functional.normalize(vector, dim=1) for vector in vectors], dim=1)
 
 
-def extract_frozen(frame, model, tokenizer, provenance, cache_root, max_length=512, batch_size=2):
+def extract_frozen(frame, model, tokenizer, provenance, cache_root, max_length=512, batch_size=2, max_seconds=None):
     """Resume flushed batches, keyed by text, IDs, weights, settings and versions."""
     import torch
 
@@ -206,10 +209,13 @@ def extract_frozen(frame, model, tokenizer, provenance, cache_root, max_length=5
     pending = pending[np.argsort(-lengths[pending], kind="stable")]
     started = time.perf_counter()
     for start in range(0, len(pending), batch_size):
+        if max_seconds is not None and time.perf_counter() - started >= max_seconds:
+            raise TimeoutError('Extraction budget reached; completed batches are saved. Share the pilot/progress report before continuing.')
         indices = pending[start:start + batch_size]
         batch = tokenizer([frame.text.iloc[int(i)] for i in indices], add_special_tokens=False,
                           padding=True, truncation=True, max_length=max_length, return_tensors="pt")
-        batch = {key: value.to(model.device) for key, value in batch.items()}
+        input_device = model.get_input_embeddings().weight.device
+        batch = {key: value.to(input_device) for key, value in batch.items()}
         with torch.inference_mode():
             result = model(**batch, use_cache=False, output_hidden_states=True, return_dict=True)
             pooled = pool_hidden(result.hidden_states, batch["attention_mask"], layers).cpu().numpy()
@@ -525,9 +531,11 @@ def evaluate_combined(train, features, folds, labels, out):
     return metrics
 
 
-def run_combined(input_root='/kaggle/input', working='/kaggle/working', allow_cpu=False, run_cv=True):
+def run_combined(input_root='/kaggle/input', working='/kaggle/working', allow_cpu=False, run_cv=True,
+                 model_loader=None, model_discovery=None, feature_extractor=None,
+                 experiment_name='combined-v1', cache_name='qwen-frozen-v1/cache'):
     started = time.perf_counter()
-    out = Path(working) / 'combined-v1'
+    out = Path(working) / experiment_name
     out.mkdir(parents=True, exist_ok=True)
     data = discover_data(input_root)
     train = pd.read_csv(data / 'train.csv', dtype=str, keep_default_na=False)
@@ -539,10 +547,13 @@ def run_combined(input_root='/kaggle/input', working='/kaggle/working', allow_cp
     if len(labels) != 18:
         raise ValueError('Expected 18 labels')
     print('Data and original folds verified:', data, flush=True)
-    model, tokenizer, provenance = load_frozen(discover_model(input_root), allow_cpu=allow_cpu)
+    model_loader = model_loader or load_frozen
+    model_discovery = model_discovery or discover_model
+    feature_extractor = feature_extractor or extract_frozen
+    model, tokenizer, provenance = model_loader(model_discovery(input_root), allow_cpu=allow_cpu)
     # Same cache location and extraction settings as the frozen experiment.
-    cache = Path(working) / 'qwen-frozen-v1/cache'
-    features, train_info = extract_frozen(train, model, tokenizer, provenance, cache)
+    cache = Path(working) / cache_name
+    features, train_info = feature_extractor(train, model, tokenizer, provenance, cache)
     validation = evaluate_combined(train, features, folds, labels, out) if run_cv else None
     cpu = fit_cpu(train.text, train.model)
     head = make_head('linear')
@@ -555,7 +566,7 @@ def run_combined(input_root='/kaggle/input', working='/kaggle/working', allow_cp
     print(f'Combined classifier 4000-row benchmark: {benchmark_seconds:.1f} seconds; excludes transformer extraction, not an accuracy test.', flush=True)
     joblib.dump(cpu, out / 'cpu.joblib')
     joblib.dump(head, out / 'qwen_head.joblib')
-    test_features, test_info = extract_frozen(test, model, tokenizer, provenance, cache)
+    test_features, test_info = feature_extractor(test, model, tokenizer, provenance, cache)
     predictions = predict_combined(cpu, head, test, test_features, labels)
     target = write_submission(test, predictions, labels, working)
     report = {'validation': validation, 'provenance': provenance, 'labels': labels.tolist(),

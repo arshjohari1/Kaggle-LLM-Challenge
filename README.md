@@ -21,6 +21,11 @@ reproduced **0.40933** in 15.85 minutes. The user submitted it and reports
 **0.417 public balanced accuracy**, up from the CPU submission's 0.372.
 The private score is unknown. See [paired analysis](reports/qwen-frozen-v1/analysis.md).
 
+**Next experiment:** [Qwen3-8B-Base two-GPU pilot and frozen comparison](docs/qwen8.md).
+The notebook is prepared; its actual 8B GPU memory, runtime and accuracy have not
+been measured yet. DeBERTa-v3-large supervised classification is also in the
+[experiment queue](docs/experiment-queue.md).
+
 ## Install
 
 Python 3.12 on Linux is the tested configuration. In the cloud workspace:

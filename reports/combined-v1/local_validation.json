@@ -1,5 +1,5 @@
 {
-  "combined_prediction_seconds": 9.45257100800518,
+  "combined_prediction_seconds": 9.018240420031361,
   "cpu_fit_rows": 2699,
   "historical_oof_score_reproduced_by_production_rule": 0.4093263733532189,
   "historical_qwen_correct_on_cpu_errors_verified": 417,
@@ -32,5 +32,5 @@
   },
   "real_frozen_transformer_rows": 18,
   "submission_roundtrip_rows": 4000,
-  "total_seconds": 99.72367185400799
+  "total_seconds": 96.44402721500956
 }

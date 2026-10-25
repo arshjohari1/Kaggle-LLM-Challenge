@@ -107,9 +107,11 @@ def evaluate_combined(train, features, folds, labels, out):
     return metrics
 
 
-def run_combined(input_root='/kaggle/input', working='/kaggle/working', allow_cpu=False, run_cv=True):
+def run_combined(input_root='/kaggle/input', working='/kaggle/working', allow_cpu=False, run_cv=True,
+                 model_loader=None, model_discovery=None, feature_extractor=None,
+                 experiment_name='combined-v1', cache_name='qwen-frozen-v1/cache'):
     started = time.perf_counter()
-    out = Path(working) / 'combined-v1'
+    out = Path(working) / experiment_name
     out.mkdir(parents=True, exist_ok=True)
     data = discover_data(input_root)
     train = pd.read_csv(data / 'train.csv', dtype=str, keep_default_na=False)
@@ -121,10 +123,13 @@ def run_combined(input_root='/kaggle/input', working='/kaggle/working', allow_cp
     if len(labels) != 18:
         raise ValueError('Expected 18 labels')
     print('Data and original folds verified:', data, flush=True)
-    model, tokenizer, provenance = load_frozen(discover_model(input_root), allow_cpu=allow_cpu)
+    model_loader = model_loader or load_frozen
+    model_discovery = model_discovery or discover_model
+    feature_extractor = feature_extractor or extract_frozen
+    model, tokenizer, provenance = model_loader(model_discovery(input_root), allow_cpu=allow_cpu)
     # Same cache location and extraction settings as the frozen experiment.
-    cache = Path(working) / 'qwen-frozen-v1/cache'
-    features, train_info = extract_frozen(train, model, tokenizer, provenance, cache)
+    cache = Path(working) / cache_name
+    features, train_info = feature_extractor(train, model, tokenizer, provenance, cache)
     validation = evaluate_combined(train, features, folds, labels, out) if run_cv else None
     cpu = fit_cpu(train.text, train.model)
     head = make_head('linear')
@@ -137,7 +142,7 @@ def run_combined(input_root='/kaggle/input', working='/kaggle/working', allow_cp
     print(f'Combined classifier 4000-row benchmark: {benchmark_seconds:.1f} seconds; excludes transformer extraction, not an accuracy test.', flush=True)
     joblib.dump(cpu, out / 'cpu.joblib')
     joblib.dump(head, out / 'qwen_head.joblib')
-    test_features, test_info = extract_frozen(test, model, tokenizer, provenance, cache)
+    test_features, test_info = feature_extractor(test, model, tokenizer, provenance, cache)
     predictions = predict_combined(cpu, head, test, test_features, labels)
     target = write_submission(test, predictions, labels, working)
     report = {'validation': validation, 'provenance': provenance, 'labels': labels.tolist(),

@@ -78,7 +78,7 @@ not establish how larger generative encoders would perform. See
 
 ## Validation and retained outputs
 
-49 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
+53 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
 fold-local style scaling, all model round trips, inner stack folds, kernel
 numerical equivalence and positive semidefiniteness, corrupt-artifact rejection,
 stale-fold rejection, and the full CLI/submission path. Thread limits prevent
@@ -223,3 +223,22 @@ performance and complementarity with existing models; the 417 earlier Qwen-only
 correct predictions show why standalone accuracy is insufficient. A larger
 model has no measured improvement here yet. Parameter-efficient fine-tuning of
 the more promising backbone follows if resources and validation support it.
+
+## Qwen8 pilot prepared; DeBERTa queued
+
+The user authorized the frozen Qwen3-8B experiment and added DeBERTa testing.
+`src/ntl/qwen8.py` and `notebooks/kaggle_qwen8.py/.ipynb` pin the official 8B
+upstream revision/shards/config/index, split the model over two GPUs, reject
+CPU/disk offload, and run a 16-longest-passage pilot. The conservative projection
+includes 4,000 hidden rows and a classifier reserve, with a default two-hour
+experiment budget. Extraction checks elapsed time between batches and preserves
+completed feature checkpoints. A Python stop does not terminate the GPU session.
+
+Shared pooling now handles hidden states across GPUs and moves masks/indices to
+the correct device; input tensors use the embedding device. Existing 1.7B
+defaults are preserved. Core tests (53) pass. A random tiny 36-layer Qwen3 checks
+layer selection, zero-budget stop and cache resume. The actual 1.7B integration
+recheck still reproduces the historical blend score and 417 count. Real 8B
+weights, dual-GPU dispatch, peak memory, speed and CV remain unrun in this CPU
+workspace. See `reports/qwen8-v1/local_architecture_check.json`,
+[Kaggle steps](qwen8.md) and [the DeBERTa queue](experiment-queue.md).
