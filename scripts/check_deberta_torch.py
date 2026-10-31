@@ -8,7 +8,7 @@ import torch
 from tokenizers import Tokenizer, models, pre_tokenizers
 from transformers import DebertaV2Config, DebertaV2Model, PreTrainedTokenizerFast
 
-from ntl.deberta import SETTINGS, OriginalSentencePiece, assert_training_precision, author_logits, build_author_model, predict_author, train_author
+from ntl.deberta import SETTINGS, OriginalSentencePiece, assert_training_precision, author_logits, build_author_model, predict_author, train_author, measure_training_pilot
 from ntl.generative import write_json
 
 
@@ -72,12 +72,17 @@ with tempfile.TemporaryDirectory(prefix='deberta-check-') as folder:
         pass
     else:
         raise AssertionError('Expired training budget accepted')
+    pilot = measure_training_pilot(model, encoded, targets, [len(x) for x in encoded['input_ids']], tokenizer,
+                                   config, 'cpu', time.perf_counter() + 120, 180, time.perf_counter())
+    assert pilot['accumulation'] == config['accumulation'] and pilot['timing_pilot_rows'] == 12
+    assert pilot['passed']
 out = Path('reports/deberta-v2')
 out.mkdir(parents=True, exist_ok=True)
 write_json(out / 'local_training_check.json', {
     'purpose': 'Random tiny 2-layer DeBERTa-v2 architecture functional test, not pretrained-large evaluation',
     'half_checkpoint_loaded_as_fp32': True, 'original_fp16_unscale_error_reproduced_on_cpu': True,
     'fp32_parameters_cpu_autocast_and_grad_scaler_step_passed': True,
+    'separate_memory_and_representative_timing_pilots_use_production_settings': True,
     'encoder_and_head_weights_updated': True, 'gradient_checkpointing_enabled': True,
     'finite_predictions': True, 'weights_only_checkpoint_roundtrip': True, 'deadline_stops_training': True,
     'epochs_executed': len(history), 'seconds': time.perf_counter() - started,

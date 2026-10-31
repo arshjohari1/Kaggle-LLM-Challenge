@@ -127,6 +127,24 @@ def best_epoch(history):
     return int(max(history, key=lambda row: (row['balanced_accuracy'], -row['epoch']))['epoch'])
 
 
+def representative_pilot_indices(targets, seed, rows=128):
+    targets = np.asarray(targets)
+    if rows < 1 or len(targets) == 0:
+        raise ValueError('Pilot sample must contain rows')
+    rng = np.random.default_rng(seed)
+    chosen = rng.choice(len(targets), min(rows, len(targets)), replace=False).tolist()
+    present = set(targets[chosen])
+    for label in sorted(set(targets) - present):
+        chosen.append(int(rng.choice(np.flatnonzero(targets == label))))
+    return np.asarray(chosen, dtype=int)
+
+
+def projected_training_seconds(elapsed, measured_seconds, sampled_rows, workload_rows):
+    if sampled_rows <= 0 or measured_seconds <= 0 or workload_rows < 0:
+        raise ValueError('Invalid training pilot measurement')
+    return elapsed + measured_seconds / sampled_rows * workload_rows * 1.5 + 20 * 60
+
+
 def check_deadline(deadline):
     if time.perf_counter() >= deadline:
         raise TimeoutError('Fine-tuning budget reached. Completed folds are retained; stop the GPU session and share progress.')
@@ -371,6 +389,44 @@ def train_author(model, tokenized, targets, indices, tokenizer, config, epochs, 
     return history
 
 
+def measure_training_pilot(model, tokenized, targets, lengths, tokenizer, config, device,
+                           deadline, workload_rows, started):
+    import torch
+
+    memory_indices = np.array(sorted(range(len(targets)), key=lambda i: lengths[i], reverse=True)[:18])
+    memory_indices = np.unique(np.concatenate([memory_indices,
+        [int(np.flatnonzero(targets == k)[0]) for k in sorted(set(targets))]]))
+    timing_indices = representative_pilot_indices(targets, config['seed'])
+    if device.startswith('cuda'):
+        torch.cuda.reset_peak_memory_stats()
+    print('MEMORY PILOT: longest passages; production batch size and accumulation.', flush=True)
+    before = time.perf_counter()
+    train_author(model, tokenized, targets, memory_indices, tokenizer, config, 1, config['seed'], device,
+                 min(deadline, before + 10 * 60))
+    memory_seconds = time.perf_counter() - before
+    print('TIMING PILOT: representative sample; same settings, warmed model.', len(timing_indices), 'rows', flush=True)
+    if device.startswith('cuda'):
+        torch.cuda.synchronize()
+    before = time.perf_counter()
+    train_author(model, tokenized, targets, timing_indices, tokenizer, config, 1, config['seed'], device,
+                 min(deadline, before + 10 * 60))
+    if device.startswith('cuda'):
+        torch.cuda.synchronize()
+    seconds = time.perf_counter() - before
+    projected = projected_training_seconds(time.perf_counter() - started, seconds, len(timing_indices), workload_rows)
+    report = {'pilot_version': 2, 'seconds_per_training_row': seconds / len(timing_indices),
+              'memory_pilot_seconds': memory_seconds, 'memory_pilot_rows': len(memory_indices),
+              'timing_pilot_seconds': seconds, 'timing_pilot_rows': len(timing_indices),
+              'batch_size': config['batch_size'], 'accumulation': config['accumulation'],
+              'timing_mean_tokens': float(np.mean(np.asarray(lengths)[timing_indices])),
+              'training_mean_tokens': float(np.mean(lengths)), 'training_rows_bound': workload_rows,
+              'projected_total_seconds': projected, 'budget_seconds': config['budget_seconds'],
+              'peak_allocated_gib': torch.cuda.max_memory_allocated() / 2**30 if device.startswith('cuda') else None,
+              'passed': projected <= config['budget_seconds'],
+              'note': 'Longest-text memory check is separate from representative production-setting throughput. Includes 50% overhead plus 20-minute reserve; disposable weights discarded.'}
+    return report
+
+
 def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
     import torch
 
@@ -418,29 +474,22 @@ def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
                                           'max_length': config['max_length']})
     print('GPU:', torch.cuda.get_device_name(0), 'Token maximum:', max(lengths), 'truncated:', sum(n > config['max_length'] for n in lengths), flush=True)
     # Pilot weights are discarded; all evaluation fits restart from pretrained weights.
-    pilot_indices = np.array(sorted(range(len(train)), key=lambda i: lengths[i], reverse=True)[:18])
-    # Include every class for the pilot loss while retaining the longest examples.
-    pilot_indices = np.unique(np.concatenate([pilot_indices, [int(np.flatnonzero(targets == k)[0]) for k in range(len(labels))]]))
-    pilot_config = {**config, 'accumulation': 1}
     pilot = build_author_model(model_dir, len(labels), config['seed'], device)
-    torch.cuda.reset_peak_memory_stats()
-    before = time.perf_counter()
-    train_author(pilot, tokenized, targets, pilot_indices, tokenizer, pilot_config, 1, config['seed'], device,
-                 min(deadline, before + 10 * 60))
-    seconds_per_row = (time.perf_counter() - before) / len(pilot_indices)
     # Includes five inner-selection runs + five fresh outer refits, worst 3 epochs.
-    training_rows_bound = sum(int(sum(folds != f)) * 1.8 * config['max_epochs'] for f in sorted(set(folds)))
-    projected = time.perf_counter() - started + seconds_per_row * training_rows_bound * 1.5 + 20 * 60
-    pilot_report = {'seconds_per_training_row': seconds_per_row, 'projected_total_seconds': projected,
-                    'budget_seconds': config['budget_seconds'], 'peak_allocated_gib': torch.cuda.max_memory_allocated() / 2**30,
-                    'passed': projected <= config['budget_seconds'],
-                    'note': 'Conservative longest-text training estimate, validation overhead allowance; pilot weights discarded.'}
+    training_rows_bound = 0
+    for fold in sorted(set(folds)):
+        outer_training = np.flatnonzero(folds != fold)
+        fitting, _ = inner_prompt_split(train, outer_training, config['seed'] + int(fold))
+        training_rows_bound += (len(fitting) + len(outer_training)) * config['max_epochs']
+    pilot_report = measure_training_pilot(pilot, tokenized, targets, lengths, tokenizer, config,
+                                          device, deadline, training_rows_bound, started)
     write_json(out / 'pilot.json', pilot_report)
     del pilot
     gc.collect(); torch.cuda.empty_cache()
     print('PILOT RESULT:', json.dumps(pilot_report), flush=True)
     if not pilot_report['passed']:
-        raise RuntimeError('Pilot exceeds six-hour compute budget. Stop Session and share pilot.json before continuing.')
+        print('PILOT STOP: projected run exceeds the six-hour budget. No full-fold training started. Stop Session and share pilot.json.', flush=True)
+        return {'status': 'stopped_at_budget_guard', 'pilot': pilot_report}
     oof_scores = np.full((len(train), len(labels)), np.nan, dtype=np.float32)
     fold_reports = []
     for fold in sorted(set(folds)):

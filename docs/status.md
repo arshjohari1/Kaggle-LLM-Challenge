@@ -78,7 +78,7 @@ not establish how larger generative encoders would perform. See
 
 ## Validation and retained outputs
 
-58 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
+60 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
 fold-local style scaling, all model round trips, inner stack folds, kernel
 numerical equivalence and positive semidefiniteness, corrupt-artifact rejection,
 stale-fold rejection, and the full CLI/submission path. Thread limits prevent
@@ -329,3 +329,22 @@ New outputs use `deberta-v2/`; verified old downloads are reused if present.
 Actual CUDA pilot retry is still required; see `reports/deberta-v2/` for CPU
 regression evidence and [rerun instructions](deberta.md). The 0.417 model stays
 unchanged and no valid DeBERTa competition score is claimed.
+
+## DeBERTa timing pilot calibrated after intentional budget stop
+
+The user retry passed the precision/tokenizer fixes and completed 18 optimizer
+steps with no skipped steps, using 8.11 GiB. The old conservative estimate was
+29,625.89 seconds (8.23 hours), above the 21,600-second budget. This was an
+intentional budget stop, not a user mistake or failed backward pass. No outer
+validation training was started. See `reports/deberta-v2/budget_stop_user_report.json`.
+
+The old pilot timed mainly long examples and used accumulation=1, unlike the
+actual accumulation=8. Updated code separates the long-text memory test from a
+reproducible 128-row representative throughput sample, and uses production batch/
+accumulation settings in both. Runtime projection retains 50% overhead plus a
+20-minute reserve and now counts exact inner-training row counts. The six-hour
+guard, model, seeds and nested validation procedure are unchanged. A predicted
+over-budget run prints PILOT STOP and returns normally, never printing SUCCESS.
+Actual new GPU throughput remains unmeasured. The 60-test suite and tiny genuine
+DeBERTa training check cover sampling/class coverage, production pilot settings,
+budget arithmetic and both pilot stages. Keep the successful 0.417 submission.

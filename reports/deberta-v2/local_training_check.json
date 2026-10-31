@@ -12,7 +12,8 @@
   "original_sentencepiece_matches_legacy_hf_on_unicode_whitespace_specials_padding_truncation": true,
   "purpose": "Random tiny 2-layer DeBERTa-v2 architecture functional test, not pretrained-large evaluation",
   "real_gpu_memory_speed_accuracy": "unrun",
-  "seconds": 0.2999080449808389,
+  "seconds": 0.30103820498334244,
+  "separate_memory_and_representative_timing_pilots_use_production_settings": true,
   "torch_version": "2.8.0+cpu",
   "weights_only_checkpoint_roundtrip": true
 }

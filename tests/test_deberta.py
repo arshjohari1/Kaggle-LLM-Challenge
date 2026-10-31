@@ -8,7 +8,7 @@ import hashlib
 import sys
 from types import SimpleNamespace
 
-from ntl.deberta import best_epoch, check_deadline, ensure_sentencepiece, inner_prompt_split, prepare_deberta
+from ntl.deberta import best_epoch, check_deadline, ensure_sentencepiece, inner_prompt_split, prepare_deberta, representative_pilot_indices, projected_training_seconds, measure_training_pilot
 
 
 def test_inner_epoch_selection_excludes_outer_prompts():
@@ -89,3 +89,32 @@ def test_offline_tokenizer_wheel_is_verified_and_installed_without_network(monke
     with pytest.raises(ValueError, match='checksum'):
         ensure_sentencepiece(tmp_path)
     assert len(calls) == 1
+
+
+def test_representative_pilot_is_reproducible_unique_and_covers_rare_classes():
+    targets = np.concatenate([np.zeros(999, dtype=int), [1]])
+    sample = representative_pilot_indices(targets, 42)
+    assert len(sample) >= 128 and len(sample) == len(set(sample))
+    assert set(targets[sample]) == {0, 1}
+    np.testing.assert_array_equal(sample, representative_pilot_indices(targets, 42))
+    assert len(representative_pilot_indices(np.array([0, 1]), 42)) == 2
+
+
+def test_pilot_times_production_accumulation_and_keeps_budget(monkeypatch):
+    from ntl import deberta
+    monkeypatch.setitem(sys.modules, 'torch', SimpleNamespace())
+    calls = []
+    def training(model, tokenized, targets, indices, tokenizer, config, epochs, seed, device, deadline):
+        calls.append((config['batch_size'], config['accumulation'], indices.copy()))
+    monkeypatch.setattr(deberta, 'train_author', training)
+    times = iter([1., 2., 3., 4., 5.])
+    monkeypatch.setattr(deberta.time, 'perf_counter', lambda: next(times))
+    targets = np.tile(np.arange(18), 150)
+    lengths = list(np.arange(len(targets)) % 350 + 1)
+    config = {**deberta.SETTINGS}
+    result = measure_training_pilot(None, None, targets, lengths, None, config, 'cpu', 21600, 58000, 0.)
+    assert [(c[0], c[1]) for c in calls] == [(2, 8), (2, 8)]
+    assert len(calls[1][2]) >= 128 and set(targets[calls[1][2]]) == set(range(18))
+    assert result['budget_seconds'] == 21600 and result['passed']
+    assert result['timing_mean_tokens'] < np.mean(np.sort(lengths)[-18:])
+    assert projected_training_seconds(0, .4 * 128, 128, 58000) > 21600

@@ -16,6 +16,18 @@ the official checkpoint is downloaded and verified again. No token is needed for
 the public model. Unused `lm_predictions`/`mask_predictions` head messages are
 expected because the encoder receives a new 18-author head.
 
+**Pilot calibration update:** the corrected user pilot trained successfully
+(18 updates, no skipped steps, 8.11 GiB allocated) but its 8.23-hour projection
+exceeded the six-hour guard. That original estimate timed mostly long passages
+and accumulation=1, whereas production uses accumulation=8. The pilot now checks
+longest-passage memory separately, then times at least 128 representative rows
+using the actual batch/accumulation settings. Both pilot stages' training effects
+are discarded before outer evaluation. The six-hour budget and all learning/
+validation settings remain unchanged; a budget stop now prints **PILOT STOP**
+without an alarming exception traceback. A new GPU estimate is still required.
+Replace the code from GitHub and restart the session before retrying. Output
+remains `deberta-v2/`; verified downloads can be reused when retained.
+
 This is a new **training experiment**, not a competition submission notebook.
 Keep the successful **0.417** CPU/Qwen submission unchanged. No DeBERTa accuracy,
 full pretrained-model backward pass, GPU memory or runtime has been measured yet.
@@ -100,10 +112,11 @@ it does not remove all model-selection optimism.
    with remote code disabled; pickle weights, if needed, require safe weights-only
    loading and modern PyTorch. The receipt records exact hashes/revision/versions.
 7. Wait for **PILOT RESULT**. Longest examples plus coverage of all 18 classes
-   exercise actual backpropagation. Those pilot weights are discarded. The
+   check peak memory; a separate representative sample times actual production
+   batch size and gradient accumulation. Those pilot weights are discarded. The
    estimate includes five inner searches, five outer refits and evaluation
    overhead. If it exceeds the **six-hour experiment budget**, training stops
-   before the full folds. Copy the report/error, save outputs, and **Stop Session**.
+   before the full folds with **PILOT STOP**. Copy the report/error, save outputs, and **Stop Session**.
    The budget is a training guard, not a promised duration or a hard GPU-allocation
    limit. Checks occur between batches; Python does not release the GPU session
    automatically.
