@@ -21,9 +21,10 @@ reproduced **0.40933** in 15.85 minutes. The user submitted it and reports
 **0.417 public balanced accuracy**, up from the CPU submission's 0.372.
 The private score is unknown. See [paired analysis](reports/qwen-frozen-v1/analysis.md).
 
-**Next experiment:** [Qwen3-8B-Base two-GPU pilot and frozen comparison](docs/qwen8.md).
-The notebook is prepared; its actual 8B GPU memory, runtime and accuracy have not
-been measured yet. DeBERTa-v3-large supervised classification is also in the
+**Latest experiment:** the [Qwen3-8B two-GPU run](docs/qwen8.md) completed in
+16.94 minutes. Its CPU blend measured **40.71% grouped CV**, versus **40.93%**
+with Qwen1.7; there is no clear improvement. Preserve the **0.417 public** model.
+DeBERTa-v3-large supervised classification is next in the
 [experiment queue](docs/experiment-queue.md).
 
 ## Install

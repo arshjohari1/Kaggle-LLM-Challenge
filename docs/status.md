@@ -242,3 +242,37 @@ recheck still reproduces the historical blend score and 417 count. Real 8B
 weights, dual-GPU dispatch, peak memory, speed and CV remain unrun in this CPU
 workspace. See `reports/qwen8-v1/local_architecture_check.json`,
 [Kaggle steps](qwen8.md) and [the DeBERTa queue](experiment-queue.md).
+
+## Qwen8 Kaggle result verified
+
+The user supplied all seven requested files and a SUCCESS log. Original hashes,
+2,699 unique row IDs, truths, folds, all 18 classes, pinned model revision/shard
+hashes, both finite score matrices, all rank-blend predictions and reconstructed
+recalls/confusion matrices match. The original CPU scores are unchanged.
+Qwen8 alone scored **0.3511633109619687**, CPU + Qwen8
+**0.4070966940094457**, versus **0.4093263733532189** with Qwen1.7. The new
+blend improves on CPU in every fold but is 0.22 points below the old blend
+overall. Conditional paired-prompt bootstrap interval for that difference is
+approximately **-1.52 to +0.96 percentage points**, so this is not an established
+accuracy difference. Qwen8 fixes **423 CPU errors**, compared with the historical
+417 for Qwen1.7; more unique fixes alone do not establish a better ensemble.
+
+The pilot passed, full run took **16.94 minutes**, training extraction **430.85
+seconds**, and full-head classifier prediction on 4,000 cached feature rows
+**45.76 seconds**, excluding extraction. No training text was truncated. The
+three-row Parquet passed notebook checks; it was not uploaded/inspected here.
+
+A single equal-rank three-way diagnostic (CPU, Qwen1.7, Qwen8; CPU score on
+ties) scored **0.41117325379070346** on reused OOF rows. This +0.18-point gain
+has conditional interval roughly **-1.19 to +1.63 points**, excluding refitting
+and model-selection uncertainty. It is exploratory, not implemented/tested for
+full inference or submitted, and does not yet justify added deployment cost.
+Preserve the actual **0.417** public submission; DeBERTa fine-tuning is the next
+queued experiment. No Qwen8 leaderboard score is known.
+
+Original seven files, source IDs and checksums are retained privately under
+`runs/qwen8-kaggle-v1-received/`, with a verified separate ZIP at
+`artifacts/qwen8-kaggle-v1-reports.zip`. Aggregates, versions, timing and checksums
+are committed under `reports/qwen8-v1/kaggle_*` and `received_files.json`.
+Raw outputs require retaining the workspace/snapshot; Git stores aggregates
+only. See `reports/qwen8-v1/kaggle_verification.json` for the verified findings.

@@ -1,0 +1,38 @@
+{
+  "all_seven_files_received_and_validated": true,
+  "rows": 2699,
+  "classes": 18,
+  "original_data_and_folds_match": true,
+  "pinned_8b_shards_and_revision_match": true,
+  "all_combined_predictions_reproduced": true,
+  "per_class_and_confusion_reconstructed": true,
+  "pilot_passed": true,
+  "scores": {
+    "cpu": 0.37560278399204566,
+    "qwen8": 0.3511633109619687,
+    "cpu_plus_qwen8": 0.4070966940094457,
+    "cpu_plus_qwen1_7": 0.4093263733532189,
+    "fixed_equal_rank_three_way_diagnostic": 0.41117325379070346
+  },
+  "new_minus_old_blend_percentage_points": -0.22296793437732165,
+  "qwen8_correct_on_cpu_errors": 423,
+  "qwen1_7_correct_on_cpu_errors": 417,
+  "all_five_new_blend_folds_improve_over_cpu": true,
+  "runtime_minutes": 16.9422216216,
+  "training_extraction_seconds": 430.847034446,
+  "head_4000_seconds": 45.75516918099993,
+  "truncated_training_rows": 0,
+  "conditional_95pct_prompt_bootstrap": {
+    "new_minus_old": [
+      -0.015185185185185137,
+      0.009642974982889466
+    ],
+    "three_way_minus_old": [
+      -0.011851976976976961,
+      0.01632747543461832
+    ]
+  },
+  "bootstrap_note": "2000 paired prompt resamples, seed 2026; conditional on reused folds and selected models, no refitting/model-selection uncertainty. Three-way result is exploratory, unimplemented for full inference and not a leaderboard score.",
+  "leaderboard_score_qwen8": null,
+  "submission_parquet_independently_inspected": false
+}

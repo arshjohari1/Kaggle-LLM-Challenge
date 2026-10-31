@@ -1,0 +1,35 @@
+{
+  "per_class.csv": {
+    "sha256": "37f56ed6df3161109f074cbf64560dc5f27a80c4ab7b463007726ced7d369e0d",
+    "size_bytes": 541
+  },
+  "oof_scores.npz": {
+    "sha256": "e3b7cb6fa16e1d91477e8d43e24c32cfd233a992442205866a9d554abaddd7ed",
+    "size_bytes": 733196
+  },
+  "confusion.csv": {
+    "sha256": "9875607b049109bf36f3ec30ce6b32a176451d1f705254e072aca47ccc736a9d",
+    "size_bytes": 1233
+  },
+  "oof.csv": {
+    "sha256": "8507dd9298785b54ac2801165a3df3c92905f3bd655eb24b6c67a3b0274ab34c",
+    "size_bytes": 191957
+  },
+  "validation.json": {
+    "sha256": "37bd56d457f3f18f8349368f6e4be9a2ef9f3a5a6acd550c8e3db4d2334f49a1",
+    "size_bytes": 933
+  },
+  "summary.json": {
+    "sha256": "50257e6591f2c28d374fb987f4b2703eee93c275478ed9d5a7f1a25de1c3cf97",
+    "size_bytes": 5191
+  },
+  "pilot.json": {
+    "sha256": "120a3dee4673192dd4ec9297e9dbbc43b0e4278fbdffa6607d9d178e2d4da74e",
+    "size_bytes": 425
+  },
+  "private_archive": {
+    "path": "artifacts/qwen8-kaggle-v1-reports.zip",
+    "sha256": "ef809388daf7958d3fdca4adfa1637850a5fd12173996f49960a52fa386e86e9",
+    "size_bytes": 773623
+  }
+}

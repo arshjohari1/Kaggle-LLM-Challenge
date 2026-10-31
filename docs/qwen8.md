@@ -1,5 +1,13 @@
 # Frozen Qwen3-8B experiment
 
+**Run completed:** the user supplied all seven requested reports. They reproduce
+35.12% standalone Qwen8 and 40.71% CPU + Qwen8 grouped balanced accuracy, with
+423 Qwen-correct CPU errors. The run took 16.94 minutes, no passages were
+truncated, and the pilot passed. This does not clearly improve on the 40.93%
+1.7B blend. The existing 0.417 public model remains the reference; no Qwen8
+leaderboard score is known. See
+[`kaggle_verification.json`](../reports/qwen8-v1/kaggle_verification.json).
+
 Keep the successful CPU + Qwen1.7 notebook and **0.417 public submission**.
 The earlier Qwen model correctly identified **417 CPU errors**; this motivates
 testing complementary features. It does not guarantee 8B will improve on it.
@@ -79,8 +87,8 @@ Git blob hashes are pinned from the official Hugging Face API. Every shard and
 configuration/index is verified before loading. Actual tokenizer hashes, model
 device placement, GPU names, dtype and package versions are recorded.
 
-This workspace has no GPU. **Full 8B loading, two-GPU dispatch, GPU peak memory,
-pilot time and competition scores remain unrun here.** Unit tests cover memory
+This workspace has no GPU. **Full 8B loading and execution remain unrun here;
+the later user-supplied Kaggle reports verify the external run as noted above.** Unit tests cover memory
 planning, CPU/disk-offload rejection, model identity, shard-index paths, hidden
 test runtime projection and generated script composition. A random tiny 36-layer
 Qwen3 check exercises pooling, extraction deadlines and cache reuse on CPU; it

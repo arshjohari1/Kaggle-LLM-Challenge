@@ -1,0 +1,13 @@
+{
+  "budget_seconds": 7200,
+  "elapsed_seconds": 148.02259360500003,
+  "note": "Conservative longest-passage extraction extrapolation plus 30-minute classifier reserve; not measured hidden-test runtime.",
+  "passed": true,
+  "peak_allocated_gib": [
+    7.164002418518066,
+    7.422134876251221
+  ],
+  "pilot_rows": 16,
+  "pilot_seconds": 6.86296605299998,
+  "projected_total_seconds_with_4000_test_rows": 4821.460692920429
+}

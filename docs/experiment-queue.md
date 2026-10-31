@@ -1,9 +1,12 @@
 # Experiment queue
 
-1. **Active: frozen Qwen3-8B-Base + fixed SVM, and its fixed CPU rank blend.**
-   Same original prompt folds as the 0.417 public submission. Start with two-GPU
-   memory/runtime pilot and retain all reports. See [run instructions](qwen8.md).
-2. **Queued: DeBERTa-v3-large author classification fine-tuning.** Add an 18-class
+1. **Completed: frozen Qwen3-8B-Base + fixed SVM, and its CPU rank blend.**
+   Pilot passed; user run took 16.94 minutes. Standalone 35.12%, CPU blend 40.71%,
+   versus 40.93% with 1.7B. All seven reports verified and retained privately.
+   No clear improvement; preserve the existing 0.417 public submission. An
+   exploratory three-model fixed rank blend scored 41.12% on reused OOF rows;
+   its +0.18-point gain is inconclusive and does not yet justify deployment.
+2. **Next queued: DeBERTa-v3-large author classification fine-tuning.** Add an 18-class
    head and evaluate within the same outer prompt folds. Early stopping and
    checkpoint selection use inner training prompt groups; outer validation is
    untouched. Frozen DeBERTa alone should not decide whether this supervised
