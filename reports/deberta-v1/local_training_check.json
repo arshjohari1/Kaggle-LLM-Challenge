@@ -1,0 +1,14 @@
+{
+  "deadline_stops_training": true,
+  "encoder_and_head_weights_updated": true,
+  "epochs_executed": 2,
+  "finite_predictions": true,
+  "gradient_checkpointing_enabled": true,
+  "network_blocker": "Hugging Face and Kaggle proxy returned 403 in this cloud environment; official download verified at Kaggle runtime.",
+  "official_pretrained_weights_tested": false,
+  "purpose": "Random tiny 2-layer DeBERTa-v2 architecture functional test, not pretrained-large evaluation",
+  "real_gpu_memory_speed_accuracy": "unrun",
+  "seconds": 0.16064784198533744,
+  "torch_version": "2.8.0+cpu",
+  "weights_only_checkpoint_roundtrip": true
+}

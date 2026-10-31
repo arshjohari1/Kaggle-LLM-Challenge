@@ -78,7 +78,7 @@ not establish how larger generative encoders would perform. See
 
 ## Validation and retained outputs
 
-53 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
+58 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
 fold-local style scaling, all model round trips, inner stack folds, kernel
 numerical equivalence and positive semidefiniteness, corrupt-artifact rejection,
 stale-fold rejection, and the full CLI/submission path. Thread limits prevent
@@ -276,3 +276,34 @@ Original seven files, source IDs and checksums are retained privately under
 are committed under `reports/qwen8-v1/kaggle_*` and `received_files.json`.
 Raw outputs require retaining the workspace/snapshot; Git stores aggregates
 only. See `reports/qwen8-v1/kaggle_verification.json` for the verified findings.
+
+## DeBERTa fine-tuning experiment implemented
+
+The user authorized building this next experiment. `src/ntl/deberta.py` and
+`notebooks/kaggle_deberta.py/.ipynb` implement full encoder/head fine-tuning,
+masked mean pooling and 18-class cross-entropy. The original outer prompt folds
+are unchanged. Inner training prompts select the epoch count (maximum 3,
+patience 1); a fresh pretrained outer refit then predicts outer-held prompts.
+Class weights are learned from each training partition only. Settings, original
+hashes, library versions and the first-download revision/weight/tokenizer hashes
+are recorded. A six-hour budget, disposable training pilot, FP16 gradient
+scaling, gradient checkpointing and completed-fold checksummed resume are added.
+Missing pretrained encoder weights, nonfinite scores or all-skipped optimizer
+steps stop the run rather than produce an apparent result.
+
+This is a training experiment with an initial Internet-On official Microsoft
+download, not the offline competition notebook. If required,
+`notebooks/kaggle_deberta_prepare.py` prepares a verified checkpoint separately
+without competition input or GPU. No full-data final fit or submission.parquet
+is generated until results justify deploying a final model. Preserve the 0.417
+submission and the historical 417 complementary Qwen predictions.
+
+Core 58 tests pass, including inner prompt isolation, ties, official-download
+checksum protocol and corrupt-cache rejection. The optional real-architecture
+CPU test updates both encoder and head of a tiny random DeBERTa-v2 model,
+checks gradient checkpointing, safe checkpoint round-trip prediction equality
+and the deadline guard. It is not pretrained-large evaluation. Cloud requests
+to Hugging Face and Kaggle currently fail with proxy 403 (including the
+escalated read-only attempt); official pretrained/tokenizer and GPU checks
+therefore await Kaggle's runtime. See `reports/deberta-v1/local_training_check.json`
+and [exact steps](deberta.md). No paid compute or remote training has been launched.

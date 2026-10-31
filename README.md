@@ -24,8 +24,9 @@ The private score is unknown. See [paired analysis](reports/qwen-frozen-v1/analy
 **Latest experiment:** the [Qwen3-8B two-GPU run](docs/qwen8.md) completed in
 16.94 minutes. Its CPU blend measured **40.71% grouped CV**, versus **40.93%**
 with Qwen1.7; there is no clear improvement. Preserve the **0.417 public** model.
-DeBERTa-v3-large supervised classification is next in the
-[experiment queue](docs/experiment-queue.md).
+The [DeBERTa-v3-large fine-tuning experiment](docs/deberta.md) is now implemented
+with local tiny-model training tests; actual pretrained GPU execution awaits
+the Kaggle pilot. See the [experiment queue](docs/experiment-queue.md).
 
 ## Install
 
