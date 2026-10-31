@@ -307,3 +307,25 @@ to Hugging Face and Kaggle currently fail with proxy 403 (including the
 escalated read-only attempt); official pretrained/tokenizer and GPU checks
 therefore await Kaggle's runtime. See `reports/deberta-v1/local_training_check.json`
 and [exact steps](deberta.md). No paid compute or remote training has been launched.
+
+## DeBERTa pilot precision failure fixed
+
+The user's first pretrained-large pilot loaded and verified the public weights
+but stopped at `GradScaler.unscale_` with FP16 trainable gradients. No completed
+DeBERTa outer fold or accuracy result exists. The loader now explicitly requests
+FP32, converts the whole encoder/head module to FP32 and guards the dtype before
+optimizer setup, keeping FP16 autocast and scaling for computation. A CPU AMP
+regression reproduces the original failure with half parameters and passes with
+the corrected loader on a half-precision saved checkpoint.
+
+The user's Transformers 5.16 tokenizer also emitted an unrelated Mistral regex
+warning. New code uses an original-SentencePiece adapter that matches the legacy
+HF DeBERTa slow tokenizer on Unicode, whitespace, special tokens, padding and
+truncation. It does not apply a Mistral-specific regex alteration. SentencePiece
+0.2.1 is now in the optional environment lockfile. The unused pretraining heads
+and unauthenticated HF rate-limit warning require no model/authentication fix.
+
+New outputs use `deberta-v2/`; verified old downloads are reused if present.
+Actual CUDA pilot retry is still required; see `reports/deberta-v2/` for CPU
+regression evidence and [rerun instructions](deberta.md). The 0.417 model stays
+unchanged and no valid DeBERTa competition score is claimed.

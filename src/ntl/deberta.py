@@ -4,6 +4,7 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import re
 import time
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from ntl.generative import FOLD_SHA256, TRAIN_SHA256, check_frame, discover_data
 
 
 DEBERTA_REPO = 'microsoft/deberta-v3-large'
+DEBERTA_EXPERIMENT = 'deberta-v2'
 SETTINGS = {'seed': 42, 'max_length': 512, 'batch_size': 2, 'accumulation': 8,
             'max_epochs': 3, 'patience': 1, 'encoder_lr': 1e-5, 'head_lr': 1e-4,
             'weight_decay': 0.01, 'warmup_fraction': 0.1, 'budget_seconds': 6 * 3600}
@@ -120,6 +122,67 @@ def prepare_deberta(destination):
     return destination, record
 
 
+class OriginalSentencePiece:
+    """Single-passage adapter to the original model, independent of HF fast regexes."""
+    def __init__(self, model_dir):
+        import sentencepiece
+
+        root = Path(model_dir)
+        settings = json.loads((root / 'tokenizer_config.json').read_text()) if (root / 'tokenizer_config.json').exists() else {}
+        if settings.get('do_lower_case', False) or settings.get('split_by_punct', False):
+            raise ValueError('Unexpected normalization settings; review the original tokenizer.')
+        self.spm = sentencepiece.SentencePieceProcessor(model_file=str(root / 'spm.model'))
+        self.special = {}
+        for token in ('[PAD]', '[UNK]', '[CLS]', '[SEP]', '[MASK]'):
+            index = self.spm.piece_to_id(token)
+            if self.spm.id_to_piece(index) == token:
+                self.special[token] = index
+        for key, value in settings.get('added_tokens_decoder', {}).items():
+            token = value['content'] if isinstance(value, dict) else value
+            self.special[token] = int(key)
+        if '[MASK]' not in self.special:
+            self.special['[MASK]'] = self.spm.get_piece_size()
+        if not {'[PAD]', '[UNK]', '[CLS]', '[SEP]'} <= set(self.special):
+            raise ValueError('Original DeBERTa SentencePiece special IDs are missing')
+        self.pad_token_id = self.special['[PAD]']
+        self.special_pattern = re.compile('(' + '|'.join(re.escape(s) for s in sorted(self.special, key=len, reverse=True)) + ')')
+
+    def __call__(self, texts, padding=False, truncation=False, max_length=None):
+        if padding:
+            raise ValueError('Use dynamic batch padding via pad()')
+        result = []
+        for text in texts:
+            ids = []
+            for part in self.special_pattern.split(text):
+                if part in self.special:
+                    ids.append(self.special[part])
+                elif part:
+                    ids.extend(self.spm.piece_to_id(piece) for piece in self.spm.encode(part, out_type=str))
+            if truncation:
+                if max_length is None or max_length < 2:
+                    raise ValueError('Invalid SentencePiece truncation limit')
+                ids = ids[:max_length - 2]
+            result.append([self.special['[CLS]']] + ids + [self.special['[SEP]']])
+        return {'input_ids': result, 'attention_mask': [[1] * len(ids) for ids in result]}
+
+    def pad(self, rows, padding=True, return_tensors='pt'):
+        import torch
+
+        if not padding or return_tensors != 'pt':
+            raise ValueError('Expected padded PyTorch batches')
+        width = max(len(row['input_ids']) for row in rows)
+        return {'input_ids': torch.tensor([row['input_ids'] + [self.pad_token_id] * (width - len(row['input_ids'])) for row in rows], dtype=torch.long),
+                'attention_mask': torch.tensor([row['attention_mask'] + [0] * (width - len(row['input_ids'])) for row in rows], dtype=torch.long)}
+
+
+def assert_training_precision(model):
+    import torch
+
+    wrong = [(name, str(p.dtype)) for name, p in model.named_parameters() if p.requires_grad and p.dtype != torch.float32]
+    if wrong:
+        raise ValueError('AMP training requires FP32 trainable parameters; found: ' + str(wrong[:5]))
+
+
 def build_author_model(model_dir, classes, seed, device):
     import torch
     from transformers import AutoModel
@@ -128,13 +191,17 @@ def build_author_model(model_dir, classes, seed, device):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
     # weights_only=True requires modern PyTorch and prevents arbitrary pickle loading.
+    version = tuple(int(part) for part in importlib.metadata.version('transformers').split('.')[:2])
+    precision = {'dtype': torch.float32} if version >= (4, 56) else {'torch_dtype': torch.float32}
     encoder, loading = AutoModel.from_pretrained(model_dir, local_files_only=True, trust_remote_code=False,
-                                                weights_only=True, output_loading_info=True)
+                                                weights_only=True, output_loading_info=True, **precision)
     if loading.get('missing_keys') or loading.get('mismatched_keys') or loading.get('error_msgs'):
         raise ValueError('Backbone checkpoint is incomplete or incompatible: ' + str(loading))
     encoder.gradient_checkpointing_enable()
     head = torch.nn.Sequential(torch.nn.Dropout(.1), torch.nn.Linear(encoder.config.hidden_size, classes))
-    return torch.nn.ModuleDict({'encoder': encoder, 'head': head}).to(device)
+    model = torch.nn.ModuleDict({'encoder': encoder, 'head': head}).to(device=device, dtype=torch.float32)
+    assert_training_precision(model)
+    return model
 
 
 def author_logits(model, batch):
@@ -173,6 +240,7 @@ def train_author(model, tokenized, targets, indices, tokenizer, config, epochs, 
                  deadline, selection=None, progress=None):
     import torch
 
+    assert_training_precision(model)
     indices = np.asarray(indices, dtype=int)
     counts = np.bincount(targets[indices], minlength=len(set(targets)))
     if (counts == 0).any():
@@ -241,7 +309,6 @@ def train_author(model, tokenized, targets, indices, tokenizer, config, epochs, 
 
 def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
     import torch
-    from transformers import AutoTokenizer
 
     if not torch.cuda.is_available():
         raise RuntimeError('Enable a free GPU. This fine-tuning experiment is not intended for CPU.')
@@ -251,7 +318,7 @@ def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
     device = 'cuda:0'
     started = time.perf_counter()
     deadline = started + config['budget_seconds']
-    out = Path(working) / 'deberta-v1'
+    out = Path(working) / DEBERTA_EXPERIMENT
     out.mkdir(parents=True, exist_ok=True)
     data = discover_data(input_root)
     train = pd.read_csv(data / 'train.csv', dtype=str, keep_default_na=False)
@@ -263,19 +330,23 @@ def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
                 if (p.parent / 'config.json').is_file()]
     if len(attached) > 1:
         raise ValueError('Attach only one prepared DeBERTa checkpoint')
-    model_dir, pretrained = prepare_deberta(attached[0] if attached else out / 'pretrained')
+    old_cache = Path(working) / 'deberta-v1/pretrained'
+    cache = old_cache if (old_cache / 'verified.json').exists() else Path(working) / 'deberta-pretrained'
+    model_dir, pretrained = prepare_deberta(attached[0] if attached else cache)
     versions = {name: importlib.metadata.version(name) for name in
                 ('torch', 'transformers', 'huggingface-hub', 'tokenizers', 'sentencepiece',
                  'numpy', 'pandas', 'scikit-learn', 'pyarrow')}
     signature = {'config': config, 'pretrained': pretrained, 'versions': versions,
-                 'procedure': {'version': 1, 'pooling': 'masked_mean', 'head_dropout': .1,
+                 'procedure': {'version': 2, 'pooling': 'masked_mean', 'head_dropout': .1,
+                               'tokenizer': 'original_sentencepiece_single_text_v1', 'trainable_dtype': 'float32',
                                'inner_prompt_fraction': .2, 'class_weights': 'inverse_training_frequency', 'amp_initial_scale': 1024},
                  'train_sha256': TRAIN_SHA256, 'fold_sha256': FOLD_SHA256, 'labels': labels.tolist()}
     manifest = out / 'manifest.json'
     if manifest.exists() and json.loads(manifest.read_text()) != signature:
         raise ValueError('Existing experiment settings differ. Use a new output directory.')
     write_json(manifest, signature)
-    tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True, trust_remote_code=False)
+    tokenizer = OriginalSentencePiece(model_dir)
+    print('Training parameters: float32; compute: CUDA autocast float16; tokenizer: original SentencePiece.', flush=True)
     full = tokenizer(train.text.tolist(), padding=False, truncation=False)
     lengths = [len(ids) for ids in full['input_ids']]
     tokenized = tokenizer(train.text.tolist(), padding=False, truncation=True, max_length=config['max_length'])

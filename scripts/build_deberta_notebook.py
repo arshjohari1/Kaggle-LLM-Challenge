@@ -37,7 +37,7 @@ Five fixed outer prompt folds each use inner training prompts to select 1–3 ep
 then a fresh outer-training refit predicts untouched held-out prompts.
 Default compute budget 6 hours; pilot may stop before full training. Stop Session
 explicitly after saving results. Partial completed folds resume in the same session.
-Share deberta-v1/{pilot.json,summary.json,manifest.json,tokenization.json,oof.csv,
+Share deberta-v2/{pilot.json,summary.json,manifest.json,tokenization.json,oof.csv,
 oof_scores.npz,per_class.csv,confusion.csv}; do not upload large model checkpoints.
 No full GPU training or pretrained-weight smoke test has been run in the CPU
 development environment; local tests cover a tiny randomly initialized encoder.

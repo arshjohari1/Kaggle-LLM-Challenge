@@ -14,6 +14,9 @@
    source/license/revision/hashes are verified at first Kaggle download. The
    cloud proxy blocks pretrained downloads; tiny architecture training tests
    pass, but pretrained/GPU execution remains unrun. See [instructions](deberta.md).
+   The first user pilot later loaded the checkpoint but failed on FP16 gradient
+   unscaling. The v2 precision/original-SentencePiece update is implemented and
+   CPU-regression-tested; a new actual GPU pilot is pending. No accuracy exists.
 3. **Conditional: another family or LoRA fine-tuning of a promising generative
    backbone.** Decide from measured accuracy, complementary errors, memory,
    runtime and remaining free quota. Preserve the 0.417 submission. No spending

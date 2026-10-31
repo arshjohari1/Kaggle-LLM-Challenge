@@ -1,0 +1,18 @@
+{
+  "deadline_stops_training": true,
+  "encoder_and_head_weights_updated": true,
+  "epochs_executed": 2,
+  "finite_predictions": true,
+  "fp32_parameters_cpu_autocast_and_grad_scaler_step_passed": true,
+  "gradient_checkpointing_enabled": true,
+  "half_checkpoint_loaded_as_fp32": true,
+  "network_blocker": "Hugging Face and Kaggle proxy returned 403 in this cloud environment; official download verified at Kaggle runtime.",
+  "official_pretrained_weights_tested": false,
+  "original_fp16_unscale_error_reproduced_on_cpu": true,
+  "original_sentencepiece_matches_legacy_hf_on_unicode_whitespace_specials_padding_truncation": true,
+  "purpose": "Random tiny 2-layer DeBERTa-v2 architecture functional test, not pretrained-large evaluation",
+  "real_gpu_memory_speed_accuracy": "unrun",
+  "seconds": 0.2999080449808389,
+  "torch_version": "2.8.0+cpu",
+  "weights_only_checkpoint_roundtrip": true
+}

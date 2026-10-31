@@ -1,0 +1,11 @@
+{
+  "source": "User-reported Kaggle pilot traceback",
+  "error": "ValueError: Attempting to unscale FP16 gradients.",
+  "stage": "Disposable pilot; no valid outer-fold score produced",
+  "fix": "Explicit FP32 checkpoint load and ModuleDict conversion; precision guard before optimizer construction",
+  "tokenizer": "Original SentencePiece single-text adapter, independent of Transformers 5 fast regex backend",
+  "output_directory": "deberta-v2",
+  "old_verified_pretrained_cache_reused_when_available": true,
+  "gpu_retest": "unrun in CPU development environment",
+  "new_competition_score": null
+}

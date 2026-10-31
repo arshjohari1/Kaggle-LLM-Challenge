@@ -1,5 +1,21 @@
 # DeBERTa-v3-large fine-tuning experiment
 
+**Precision/tokenizer update (v2):** the initial user pilot failed at gradient
+unscaling because the newer loader used half-precision parameters. Training now
+explicitly loads/converts all trainable parameters to FP32 and checks them before
+the optimizer is built; autocast still handles mixed-precision computation.
+The tokenizer uses the original `spm.model` directly, avoiding the newer fast
+backend's Mistral regex warning. No Mistral-specific flag is applied.
+
+Replace the entire Kaggle code cell with the latest GitHub Python file and
+restart the kernel/session before Run All to release the old model from memory.
+Keep Internet On and the same competition input/GPU. New reports go to
+`deberta-v2/`, avoiding a stale v1 manifest. The verified download at
+`deberta-v1/pretrained/` is reused if it survived the session restart; otherwise
+the official checkpoint is downloaded and verified again. No token is needed for
+the public model. Unused `lm_predictions`/`mask_predictions` head messages are
+expected because the encoder receives a new 18-author head.
+
 This is a new **training experiment**, not a competition submission notebook.
 Keep the successful **0.417** CPU/Qwen submission unchanged. No DeBERTa accuracy,
 full pretrained-model backward pass, GPU memory or runtime has been measured yet.
@@ -18,7 +34,7 @@ parameters including its vocabulary embeddings. It outputs contextual token
 vectors. We exclude padding, average token vectors, apply dropout, and use a
 new linear layer with 18 outputs. Cross-entropy compares these scores to known
 author labels. Backpropagation updates both the new head and all encoder weights.
-The pretrained tokenizer stays fixed and capitalization/punctuation are retained.
+The original SentencePiece model stays fixed and capitalization/punctuation are retained.
 There is no text generation, paid API data, LoRA, frozen SVM or Qwen in this run.
 
 Compared with TF-IDF, the encoder can learn contextual features. Compared with
@@ -30,7 +46,7 @@ hypothesis; overfitting the small data or prompt topics is a serious risk.
 The fixed first configuration uses encoder LR 1e-5, head LR 1e-4, AdamW weight
 decay .01, clipping 1.0, 10% warmup, dropout .1, batch size 2 with 8-step gradient
 accumulation, token limit 512 and at most three epochs. Gradient checkpointing
-and FP16 autocast/gradient scaling reduce memory. It uses GPU 0 only. The
+and FP16 autocast/gradient scaling reduce computation memory while all trainable parameters and gradients remain FP32. It uses GPU 0 only. The
 second T4 is not used; parallel fold training is deferred until fit/cost is known.
 
 ## Honest validation
@@ -101,7 +117,7 @@ it does not remove all model-selection optimism.
    **SUCCESS: DeBERTa five-fold experiment complete.** Download and send:
 
    ```text
-   /kaggle/working/deberta-v1/
+   /kaggle/working/deberta-v2/
        pilot.json
        summary.json
        manifest.json
@@ -148,5 +164,9 @@ Tests verify inner prompt isolation, early-epoch ties, deadline checks and exact
 standalone source embedding. `scripts/check_deberta_torch.py` uses a tiny random
 DeBERTa-v2 encoder to perform backward updates to encoder and head, gradient
 checkpointing, finite predictions, safe checkpoint reload equivalence and budget
-stopping. Synthetic scores are not competition performance. See
-`reports/deberta-v1/local_training_check.json`. No paid service is used.
+stopping. A half-checkpoint regression reproduces the FP16 unscale failure and
+verifies FP32 loading and a successful CPU autocast/GradScaler step. The original
+SentencePiece adapter matches legacy HF DeBERTa token IDs/masks across Unicode,
+specials, whitespace, padding and truncation. These are CPU checks; the actual
+CUDA fix must still pass Kaggle's pilot. Synthetic scores are not competition performance. See
+`reports/deberta-v2/local_training_check.json`. No paid service is used.
