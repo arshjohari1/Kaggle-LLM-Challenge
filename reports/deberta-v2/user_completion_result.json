@@ -10,6 +10,7 @@
     3
   ],
   "outer_fold_scores_available": {
+    "0": 0.3487228607918263,
     "1": 0.3092592592592593,
     "2": 0.30185185185185187,
     "3": 0.3462962962962963,
@@ -21,7 +22,5 @@
   "raw_file_recovery_status": "User reports new session and missing files; saved-version outputs not yet confirmed",
   "leaderboard_score": null,
   "selection_note": "Four of five inner selections reach the three-epoch cap; more epochs are not proven beneficial without learning curves.",
-  "outer_fold_scores_missing": [
-    0
-  ]
+  "outer_fold_scores_missing": []
 }

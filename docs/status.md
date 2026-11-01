@@ -373,3 +373,7 @@ Additional user console lines recovered: fold 1 = 0.3092592592592593 (2 epochs),
 fold 2 = 0.30185185185185187 (3 epochs), fold 3 = 0.3462962962962963
 (3 epochs). Together with fold 4, only fold 0 remains missing. These do not
 restore row-level predictions; the full reported OOF score remains 0.32083768332090484.
+
+Final missing console line recovered: fold 0 = 0.3487228607918263 (3 epochs).
+All five fold scores are now preserved; original row-level files remain pending
+recovery from saved Kaggle versions or surviving working/fold-score files.
