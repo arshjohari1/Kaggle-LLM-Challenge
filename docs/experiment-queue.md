@@ -6,7 +6,11 @@
    No clear improvement; preserve the existing 0.417 public submission. An
    exploratory three-model fixed rank blend scored 41.12% on reused OOF rows;
    its +0.18-point gain is inconclusive and does not yet justify deployment.
-2. **Active, implemented: DeBERTa-v3-large author classification fine-tuning.**
+2. **Completed, console result only: DeBERTa-v3-large author classification fine-tuning.**
+   User reports **32.08% grouped balanced accuracy**, 146.90 minutes, selected
+   epochs [3,2,3,3,3]. Original files are missing from the new session; inspect
+   saved versions before rerunning. No independent OOF verification or ensemble
+   complementarity measurement yet, and no DeBERTa leaderboard submission.
    Pretrained encoder + masked mean + 18-class head, updating encoder and head.
    Inner training prompt groups select 1–3 epochs, then fresh outer refits
    evaluate the original five held-out folds. One-GPU FP16/checkpointing pilot,
@@ -16,7 +20,9 @@
    pass, but pretrained/GPU execution remains unrun. See [instructions](deberta.md).
    The first user pilot later loaded the checkpoint but failed on FP16 gradient
    unscaling. The v2 precision/original-SentencePiece update is implemented and
-   CPU-regression-tested; a new actual GPU pilot is pending. No accuracy exists.
+   CPU-regression-tested; the subsequent revised timing pilot allowed the
+   completed run reported above. Keep the historical sequence separate from
+   current completion status.
 3. **Conditional: another family or LoRA fine-tuning of a promising generative
    backbone.** Decide from measured accuracy, complementary errors, memory,
    runtime and remaining free quota. Preserve the 0.417 submission. No spending

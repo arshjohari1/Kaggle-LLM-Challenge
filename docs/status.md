@@ -348,3 +348,23 @@ over-budget run prints PILOT STOP and returns normally, never printing SUCCESS.
 Actual new GPU throughput remains unmeasured. The 60-test suite and tiny genuine
 DeBERTa training check cover sampling/class coverage, production pilot settings,
 budget arithmetic and both pilot stages. Keep the successful 0.417 submission.
+
+## DeBERTa completion reported; raw files pending recovery
+
+The user pasted a completed five-fold SUCCESS block: **0.32083768332090484**
+grouped balanced accuracy in **146.89593964078333 minutes** (about 2h27m),
+selected epochs **[3, 2, 3, 3, 3]**, and fold 4 score **0.2981481481481481**.
+See `reports/deberta-v2/user_completion_result.json`. This is a user-reported
+completed run, not independently reconstructed from predictions. Folds 0–3
+scores and report files have not been received. The user returned after a long
+absence, found a new session and no working files; temporary outputs may be lost.
+Check saved-version outputs and preserve console scores before any rerun.
+
+This configuration scores below standalone CPU (37.56%), frozen Qwen (~35.12%),
+and the existing blend (40.93%) on the nominal same outer folds. Preserve the
+0.417 public submission. A lower standalone score does not prove no ensemble
+value; assessing complementarity needs the missing OOF predictions/scores.
+Four folds selected the maximum three epochs, so inner learning curves would be
+useful, but extra training is not proven to help. Do not blindly repeat the same
+2h27m run just to recover reports. For future long runs use a saved background
+Save & Run All version directly so output artifacts persist after completion.

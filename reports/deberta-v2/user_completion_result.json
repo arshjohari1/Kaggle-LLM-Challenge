@@ -1,0 +1,21 @@
+{
+  "source": "User-pasted final Kaggle console output; original report files not received",
+  "balanced_accuracy": 0.32083768332090484,
+  "elapsed_minutes": 146.89593964078333,
+  "selected_epochs": [
+    3,
+    2,
+    3,
+    3,
+    3
+  ],
+  "outer_fold_scores_available": {
+    "4": 0.2981481481481481
+  },
+  "success_message": "DeBERTa five-fold experiment complete.",
+  "independently_recomputed": false,
+  "oof_predictions_received": false,
+  "raw_file_recovery_status": "User reports new session and missing files; saved-version outputs not yet confirmed",
+  "leaderboard_score": null,
+  "selection_note": "Four of five inner selections reach the three-epoch cap; more epochs are not proven beneficial without learning curves."
+}
