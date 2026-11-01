@@ -1,5 +1,9 @@
 # DeBERTa-v3-large fine-tuning experiment
 
+**Recovering the lost completed run:** use the [dedicated recovery guide](deberta-recovery.md).
+It reuses the original inner-selected epochs and saves one report ZIP through
+a background Save & Run All version; it does not repeat the whole epoch search.
+
 **Precision/tokenizer update (v2):** the initial user pilot failed at gradient
 unscaling because the newer loader used half-precision parameters. Training now
 explicitly loads/converts all trainable parameters to FP32 and checks them before
@@ -106,7 +110,9 @@ it does not remove all model-selection optimism.
    experiment does not install online packages automatically or weaken TLS/checksum
    checks. If you attach the prepared offline wheel described below, it can install
    that local checksum-verified wheel without Internet.
-6. **Run All**. Official Hugging Face metadata resolves a fixed repository
+6. For a long full experiment, prefer **Save Version → Save & Run All directly**
+   so generated files persist with the completed version. There is no need to
+   run the whole experiment interactively first. Official Hugging Face metadata resolves a fixed repository
    revision and checks its license before download. LFS SHA-256/Git blob hashes
    verify every selected resource. Model and tokenizer are then loaded locally
    with remote code disabled; pickle weights, if needed, require safe weights-only

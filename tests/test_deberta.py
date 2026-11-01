@@ -8,7 +8,7 @@ import hashlib
 import sys
 from types import SimpleNamespace
 
-from ntl.deberta import best_epoch, check_deadline, ensure_sentencepiece, inner_prompt_split, prepare_deberta, representative_pilot_indices, projected_training_seconds, measure_training_pilot
+from ntl.deberta import best_epoch, check_deadline, ensure_sentencepiece, inner_prompt_split, prepare_deberta, representative_pilot_indices, projected_training_seconds, measure_training_pilot, validate_recovery_epochs, bundle_deberta_reports
 
 
 def test_inner_epoch_selection_excludes_outer_prompts():
@@ -118,3 +118,36 @@ def test_pilot_times_production_accumulation_and_keeps_budget(monkeypatch):
     assert result['budget_seconds'] == 21600 and result['passed']
     assert result['timing_mean_tokens'] < np.mean(np.sort(lengths)[-18:])
     assert projected_training_seconds(0, .4 * 128, 128, 58000) > 21600
+
+
+def test_recovery_epoch_counts_match_original_inner_choices():
+    epochs = [3, 2, 3, 3, 3]
+    assert validate_recovery_epochs(epochs, np.arange(5), 3) == epochs
+    assert validate_recovery_epochs(None, np.arange(5), 3) is None
+    for wrong in ([3, 2], [3, 2, 3, 3, 4], [3, True, 3, 3, 3]):
+        with pytest.raises(ValueError):
+            validate_recovery_epochs(wrong, np.arange(5), 3)
+
+
+def test_report_bundle_contains_reports_and_verifiable_hashes(tmp_path):
+    import zipfile
+    names = ('pilot.json', 'summary.json', 'manifest.json', 'tokenization.json',
+             'oof.csv', 'oof_scores.npz', 'per_class.csv', 'confusion.csv')
+    for name in names:
+        (tmp_path / name).write_bytes(('fixture for ' + name).encode())
+    (tmp_path / 'model.pt').write_bytes(b'large model excluded')
+    receipt = bundle_deberta_reports(tmp_path, tmp_path / 'reports.zip')
+    with zipfile.ZipFile(tmp_path / 'reports.zip') as bundle:
+        assert set(bundle.namelist()) == set(names) | {'report_files.json'}
+        for name in names:
+            assert hashlib.sha256(bundle.read(name)).hexdigest() == receipt[name]['sha256']
+
+
+def test_generated_recovery_runs_only_original_epoch_replay():
+    root = Path(__file__).resolve().parents[1]
+    code = (root / 'notebooks/kaggle_deberta_recovery.py').read_text()
+    nb = json.loads((root / 'notebooks/kaggle_deberta_recovery.ipynb').read_text())
+    assert code == ''.join(nb['cells'][1]['source'])
+    assert code.endswith('_ = run_deberta(recovery_epochs=[3, 2, 3, 3, 3])\n')
+    assert '\n_ = run_deberta()' not in code and 'from ntl.' not in code
+    compile(code, 'deberta-recovery', 'exec')

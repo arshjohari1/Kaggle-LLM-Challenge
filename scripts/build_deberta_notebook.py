@@ -49,6 +49,27 @@ development environment; local tests cover a tiny randomly initialized encoder.
             {'cell_type': 'code', 'id': 'deberta', 'metadata': {}, 'execution_count': None,
              'outputs': [], 'source': code.splitlines(keepends=True)}]}
     (root / 'notebooks/kaggle_deberta.ipynb').write_text(json.dumps(nb, indent=1) + '\n')
+    epochs = json.loads((root / 'reports/deberta-v2/user_completion_result.json').read_text())['selected_epochs']
+    recovery = code.rsplit('\n_ = run_deberta()', 1)[0] + f'\n_ = run_deberta(recovery_epochs={epochs!r})\n'
+    (root / 'notebooks/kaggle_deberta_recovery.py').write_text(recovery)
+    recovery_intro = '''# DeBERTa report recovery — run as a SAVED BACKGROUND VERSION
+
+Replays original inner-selected epochs [3,2,3,3,3], skipping repeated selection.
+No new hyperparameter search; original outer prompt folds/learning settings stay.
+Original model/package manifest was lost, so exact 32.08% reproduction is not guaranteed.
+Attach competition data, select free GPU and Internet On, then use
+Save Version → Save & Run All DIRECTLY (not an interactive Run All first).
+Save a GPU-enabled training version; this is not a competition submission.
+Output: deberta-recovery-v1-reports.zip contains all eight small reports and checksums.
+Open the completed saved version's Output to download it. Per-fold checkpoints
+are large and excluded from the report ZIP. Keep the 0.417 submission unchanged.
+Pilot and six-hour budget guard remain. No recovery GPU run has been executed here.
+'''
+    recovery_nb = {**nb, 'cells': [
+        {'cell_type': 'markdown', 'id': 'recovery-instructions', 'metadata': {}, 'source': recovery_intro.splitlines(keepends=True)},
+        {'cell_type': 'code', 'id': 'recovery', 'metadata': {}, 'execution_count': None,
+         'outputs': [], 'source': recovery.splitlines(keepends=True)}]}
+    (root / 'notebooks/kaggle_deberta_recovery.ipynb').write_text(json.dumps(recovery_nb, indent=1) + '\n')
     preparation = imports + '\n' + constants + '\n\n' + data + '\n\n' + source
     preparation += '''
 

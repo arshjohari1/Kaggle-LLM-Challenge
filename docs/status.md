@@ -78,7 +78,7 @@ not establish how larger generative encoders would perform. See
 
 ## Validation and retained outputs
 
-60 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
+63 tests pass, including prompt/duplicate isolation, held-out vocabulary canaries,
 fold-local style scaling, all model round trips, inner stack folds, kernel
 numerical equivalence and positive semidefiniteness, corrupt-artifact rejection,
 stale-fold rejection, and the full CLI/submission path. Thread limits prevent
@@ -377,3 +377,21 @@ restore row-level predictions; the full reported OOF score remains 0.32083768332
 Final missing console line recovered: fold 0 = 0.3487228607918263 (3 epochs).
 All five fold scores are now preserved; original row-level files remain pending
 recovery from saved Kaggle versions or surviving working/fold-score files.
+
+## DeBERTa report recovery implemented
+
+The user confirms zero saved versions and asks to rerun. A dedicated notebook
+`notebooks/kaggle_deberta_recovery.py/.ipynb` replays the original five training-
+side epoch choices [3,2,3,3,3] and regenerates outer OOF predictions without
+repeating inner epoch-selection fits. It keeps data/folds/seeds and all learning
+settings; the original pretrained/package manifest is unavailable, so exact
+numerical reproduction is not guaranteed. New metadata clearly labels replay
+and records current hashes/versions. Outputs use `deberta-recovery-v1/`.
+
+Both full and recovery modes now package the eight reports plus SHA-256 receipt
+into an atomically written, readback-verified ZIP excluding large checkpoints.
+For recovery it is `deberta-recovery-v1-reports.zip`. The six-hour pilot/deadline
+guard remains and the workload estimate excludes repeated inner searches and
+completed folds. Current tests (63) pass; no new recovery GPU run has been
+launched here. Launch directly as **Save Version → Save & Run All**, not a full
+interactive pass first. See [the recovery guide](deberta-recovery.md).

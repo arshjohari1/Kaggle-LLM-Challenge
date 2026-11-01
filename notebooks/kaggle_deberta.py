@@ -145,6 +145,37 @@ def projected_training_seconds(elapsed, measured_seconds, sampled_rows, workload
     return elapsed + measured_seconds / sampled_rows * workload_rows * 1.5 + 20 * 60
 
 
+def validate_recovery_epochs(epochs, folds, max_epochs):
+    if epochs is None:
+        return None
+    if sorted(set(folds)) != list(range(5)) or len(epochs) != 5:
+        raise ValueError('Recovery requires one epoch count for each original fold 0–4')
+    if any(type(value) is not int or not 1 <= value <= max_epochs for value in epochs):
+        raise ValueError('Invalid original inner-selected epoch counts')
+    return list(epochs)
+
+
+def bundle_deberta_reports(out, archive):
+    import zipfile
+
+    names = ('pilot.json', 'summary.json', 'manifest.json', 'tokenization.json',
+             'oof.csv', 'oof_scores.npz', 'per_class.csv', 'confusion.csv')
+    receipt = {name: {'sha256': sha256_file(out / name), 'bytes': (out / name).stat().st_size} for name in names}
+    write_json(out / 'report_files.json', receipt)
+    pending = archive.with_suffix('.zip.part')
+    with zipfile.ZipFile(pending, 'w', compression=zipfile.ZIP_DEFLATED) as bundle:
+        for name in (*names, 'report_files.json'):
+            bundle.write(out / name, arcname=name)
+    with zipfile.ZipFile(pending) as bundle:
+        if bundle.testzip() is not None:
+            raise ValueError('Report archive failed its readback check')
+        for name, info in receipt.items():
+            if hashlib.sha256(bundle.read(name)).hexdigest() != info['sha256']:
+                raise ValueError('Report archive checksum mismatch')
+    pending.replace(archive)
+    return receipt
+
+
 def check_deadline(deadline):
     if time.perf_counter() >= deadline:
         raise TimeoutError('Fine-tuning budget reached. Completed folds are retained; stop the GPU session and share progress.')
@@ -427,7 +458,7 @@ def measure_training_pilot(model, tokenized, targets, lengths, tokenizer, config
     return report
 
 
-def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
+def run_deberta(input_root='/kaggle/input', working='/kaggle/working', recovery_epochs=None):
     import torch
 
     if not torch.cuda.is_available():
@@ -438,12 +469,14 @@ def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
     device = 'cuda:0'
     started = time.perf_counter()
     deadline = started + config['budget_seconds']
-    out = Path(working) / DEBERTA_EXPERIMENT
+    output_name = 'deberta-recovery-v1' if recovery_epochs is not None else DEBERTA_EXPERIMENT
+    out = Path(working) / output_name
     out.mkdir(parents=True, exist_ok=True)
     data = discover_data(input_root)
     train = pd.read_csv(data / 'train.csv', dtype=str, keep_default_na=False)
     check_frame(train, ['id', 'prompt_id', 'text', 'model'])
     folds = official_folds(train, data / 'train.csv')
+    recovery_epochs = validate_recovery_epochs(recovery_epochs, folds, config['max_epochs'])
     labels = np.array(sorted(train.model.unique()))
     targets = pd.Categorical(train.model, categories=labels).codes.astype(np.int64)
     attached = [p.parent for p in Path(input_root).rglob('verified.json')
@@ -461,6 +494,11 @@ def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
                                'tokenizer': 'original_sentencepiece_single_text_v1', 'trainable_dtype': 'float32',
                                'inner_prompt_fraction': .2, 'class_weights': 'inverse_training_frequency', 'amp_initial_scale': 1024},
                  'train_sha256': TRAIN_SHA256, 'fold_sha256': FOLD_SHA256, 'labels': labels.tolist()}
+    if recovery_epochs is not None:
+        signature['recovery'] = {'epochs': recovery_epochs, 'source': 'Original user-reported training-side inner selections',
+                                 'original_pretrained_and_package_manifest_available': False,
+                                 'note': 'Replays original outer fits; exact original numeric reproduction cannot be guaranteed without its lost manifest.'}
+        print('RECOVERY MODE: replaying original inner-selected epoch counts:', recovery_epochs, flush=True)
     manifest = out / 'manifest.json'
     if manifest.exists() and json.loads(manifest.read_text()) != signature:
         raise ValueError('Existing experiment settings differ. Use a new output directory.')
@@ -479,8 +517,13 @@ def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
     training_rows_bound = 0
     for fold in sorted(set(folds)):
         outer_training = np.flatnonzero(folds != fold)
-        fitting, _ = inner_prompt_split(train, outer_training, config['seed'] + int(fold))
-        training_rows_bound += (len(fitting) + len(outer_training)) * config['max_epochs']
+        if (out / f'fold-{fold}' / 'complete.json').exists():
+            continue  # Completed fold checksums are verified before scores are reused below.
+        if recovery_epochs is not None:
+            training_rows_bound += len(outer_training) * recovery_epochs[int(fold)]
+        else:
+            fitting, _ = inner_prompt_split(train, outer_training, config['seed'] + int(fold))
+            training_rows_bound += (len(fitting) + len(outer_training)) * config['max_epochs']
     pilot_report = measure_training_pilot(pilot, tokenized, targets, lengths, tokenizer, config,
                                           device, deadline, training_rows_bound, started)
     write_json(out / 'pilot.json', pilot_report)
@@ -510,19 +553,23 @@ def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
             oof_scores[va] = restored
             fold_reports.append(cached['metrics'])
             continue
-        fitting, selection = inner_prompt_split(train, tr, config['seed'] + int(fold))
-        model = build_author_model(model_dir, len(labels), config['seed'] + int(fold), device)
-        history = train_author(model, tokenized, targets, fitting, tokenizer, config, config['max_epochs'],
-                               config['seed'] + int(fold), device, deadline, selection, folder / 'inner_progress.json')
-        epochs = best_epoch(history)
-        del model
-        gc.collect(); torch.cuda.empty_cache()
+        if recovery_epochs is not None:
+            epochs, history = recovery_epochs[int(fold)], []
+        else:
+            fitting, selection = inner_prompt_split(train, tr, config['seed'] + int(fold))
+            model = build_author_model(model_dir, len(labels), config['seed'] + int(fold), device)
+            history = train_author(model, tokenized, targets, fitting, tokenizer, config, config['max_epochs'],
+                                   config['seed'] + int(fold), device, deadline, selection, folder / 'inner_progress.json')
+            epochs = best_epoch(history)
+            del model
+            gc.collect(); torch.cuda.empty_cache()
         model = build_author_model(model_dir, len(labels), config['seed'] + int(fold), device)
         outer_history = train_author(model, tokenized, targets, tr, tokenizer, config, epochs,
                                      config['seed'] + int(fold), device, deadline, progress=folder / 'outer_progress.json')
         scores = predict_author(model, tokenized, va, tokenizer, config, device, deadline)
         oof_scores[va] = scores
         metric = {'fold': int(fold), 'selected_epochs': epochs, 'inner_history': history,
+                  'epoch_selection_origin': 'replayed_original_inner_choice' if recovery_epochs is not None else 'new_inner_selection',
                   'outer_history': outer_history, 'balanced_accuracy': float(balanced_accuracy_score(targets[va], scores.argmax(axis=1))),
                   'training_rows': len(tr), 'validation_rows': len(va)}
         pending = folder / 'model.pt.part'
@@ -544,8 +591,12 @@ def run_deberta(input_root='/kaggle/input', working='/kaggle/working'):
     pd.DataFrame(confusion_matrix(train.model, predictions, labels=labels), index=labels, columns=labels).to_csv(out / 'confusion.csv')
     report = {'balanced_accuracy': score, 'folds': fold_reports, 'manifest': signature,
               'elapsed_minutes': (time.perf_counter() - started) / 60,
-              'note': 'Inner prompt groups select epochs; fresh outer refits predict untouched outer prompts. No final full-data fit or competition submission yet.'}
+              'note': 'Original inner-selected epochs replayed; fresh outer refits regenerate OOF reports. No new epoch search or exact reproduction guarantee.' if recovery_epochs is not None else
+                      'Inner prompt groups select epochs; fresh outer refits predict untouched outer prompts. No final full-data fit or competition submission yet.'}
     write_json(out / 'summary.json', report)
+    archive = Path(working) / (output_name + '-reports.zip')
+    bundle_deberta_reports(out, archive)
+    print('REPORT BUNDLE:', archive, flush=True)
     print('RESULT TO SHARE:', json.dumps({'balanced_accuracy': score, 'elapsed_minutes': report['elapsed_minutes'],
                                         'selected_epochs': [row['selected_epochs'] for row in fold_reports]}), flush=True)
     print('SUCCESS: DeBERTa five-fold experiment complete. Save reports before stopping the GPU session.', flush=True)
